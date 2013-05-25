@@ -5,8 +5,8 @@ Earlier this year (2013), I participated in a production of "Children of Eden" w
 Installation
 ============
 This project requires:
- - Python 2.7
- - "pyrtmidi" (http://trac.assembla.com/pkaudio/wiki/pyrtmidi)
+ - Python 2.7 (I hope to upgrade this project to Python 3.3 in the future)
+ - "pyrtmidi" (http://trac.assembla.com/pkaudio/wiki/pyrtmidi) installed as a library for Python 2.7.
  
 Usage
 =====
