@@ -23,7 +23,6 @@ from synthesizers import MIDIDevice
 from webpages import COEVoices
 import itertools
 import re
-import rtmidi
 
 
 
@@ -34,7 +33,7 @@ class NotEnoughArgs(Exception):
 
 ## MIDIOutDevices (Just the Roland for now...)
 midiOutDeviceIDs = MIDIDevice.getMIDIOutDevices()
-print '\nFound MIDI Out Devices: "{0}"'.format(midiOutDeviceIDs)
+print('\nFound MIDI Out Devices: "{0}"'.format(midiOutDeviceIDs))
 MIDI_OUT_ROLAND = None
 for port, name in midiOutDeviceIDs:
   if re.match(r'.*FANTOM-X.*', name):
@@ -47,7 +46,7 @@ if MIDI_OUT_ROLAND is None:
 ## MIDIInDevice(s)
 #Figure out the MIDI Input devices.
 midiInDeviceIDs = MIDIDevice.getMIDIInDevices()
-print '\nFound MIDI In Devices: "{0}"'.format(midiOutDeviceIDs)
+print('\nFound MIDI In Devices: "{0}"'.format(midiOutDeviceIDs))
 #Find the Nord
 MIDI_IN_NORD_USB = None
 MIDI_IN_GEN_USB = None
@@ -62,16 +61,16 @@ for port, name in midiInDeviceIDs:
   #Keyboard 3 is directly connected to the Roland Fantom-XR.
 #If we found the Nord, map its input to the "Keyboard 1" channel.
 if MIDI_IN_NORD_USB is None:
-  print '\n\n\nERROR: Unable to find Nord USB device (for "Keyboard 1").  ;_;'
+  print('\n\n\nERROR: Unable to find Nord USB device (for "Keyboard 1").  ;_;')
 else:
-  print '\nFound Nord MIDI Device (for "Keyboard 1")!  d(^o^)b'
+  print('\nFound Nord MIDI Device (for "Keyboard 1")!  d(^o^)b')
   #Have this input device forward its messages to the Roland Fantom-XR.
   MIDI_IN_NORD_USB.setMIDIOutDevice(MIDI_OUT_ROLAND, COEVoices.PARTS['Keyboard 1'].getChannel())
 #If we found the generic USB->MIDI device,
 if MIDI_IN_GEN_USB is None:
-  print '\n\n\nERROR: Unable to find USB->MIDI device (for "Keyboard 2").  ;_;'
+  print('\n\n\nERROR: Unable to find USB->MIDI device (for "Keyboard 2").  ;_;')
 else:
-  print '\nFound Generic USB->MIDI Device (for "Keyboard 2")!  d(^o^)b'
+  print('\nFound Generic USB->MIDI Device (for "Keyboard 2")!  d(^o^)b')
   #Have this input device forward its messages to the Roland Fantom-XR.
   MIDI_IN_GEN_USB.setMIDIOutDevice(MIDI_OUT_ROLAND, COEVoices.PARTS['Keyboard 2'].getChannel())
 

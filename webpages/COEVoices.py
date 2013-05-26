@@ -743,7 +743,7 @@ PATCHES = {
 
 ##
 #  Class for representing a musical part.
-class Part(object):
+class Part():
 
   ##
   #  Class initializer.
@@ -766,10 +766,10 @@ class Part(object):
     #Check that all instruments have matching entries in PATCHES.
     for inst in self.instAll:
       if inst not in PATCHES:
-        print 'ERROR: Validation for "{0}" part found that instrument "{1}" has no match in PATCHES.'.format(
+        print('ERROR: Validation for "{0}" part found that instrument "{1}" has no match in PATCHES.'.format(
           self.name,
           inst,
-        )
+        ))
 
   ##
   #  Returns the channel number for this part.
@@ -802,7 +802,7 @@ class Part(object):
     try:
       voice = PATCHES[instrument][0]
     except IndexError:
-      print 'No programs available for "{0}".  Selecting piano.'.format(instrument)
+      print('No programs available for "{0}".  Selecting piano.'.format(instrument))
       voice = PATCHES['Piano'][0]
     midiDevice.programChange(voice, self.channel)
 

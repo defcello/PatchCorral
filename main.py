@@ -28,7 +28,7 @@
 #
 #  @date 03/07/2013
 
-import BaseHTTPServer
+import http.server
 import cgi
 import socket
 import time
@@ -40,11 +40,11 @@ import threading
 HTTP_SERVER = None
 
 try:
-  from urlparse import urlparse, parse_qs
+  from urllib.parse import urlparse, parse_qs
   from webpages import ChildrenOfEden
 
 
-  class HTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+  class HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     def address_string(self):
       host, port = self.client_address[:2]
       #return socket.getfqdn(host)
@@ -61,7 +61,7 @@ try:
       if self.path == '/style.css':
         self.send_header("Content-type", "text/css")
         self.end_headers()
-        with open('style.css', 'r') as fd:
+        with open('style.css', 'rb') as fd:
           self.wfile.write(fd.read())
       elif self.path == '/children_of_eden_by_parkbc-d2ylko8.jpg':
         self.send_header("Content-type", "application/octet-stream")
@@ -71,7 +71,7 @@ try:
       else:
         self.send_header("Content-type", "text/html")
         self.end_headers()
-        self.wfile.write(ChildrenOfEden.getPage(self.path, postVals, query_components))
+        self.wfile.write(bytes(ChildrenOfEden.getPage(self.path, postVals, query_components), 'UTF-8'))
 
     def do_POST(self):
       # print 'HEADERS='
@@ -95,26 +95,26 @@ try:
       self.do_GET(postVals)
 
 
-  def run(server_class=BaseHTTPServer.HTTPServer, handler_class=HTTPRequestHandler):
+  def run(server_class=http.server.HTTPServer, handler_class=HTTPRequestHandler):
     global HTTP_SERVER
     server_address = ('', 80)
     HTTP_SERVER = server_class(server_address, handler_class)
     HTTP_SERVER.serve_forever()
   serverThread = threading.Thread(target=run)
   serverThread.start()
-  print '\nWaiting for HTTP server to come up...'
+  print('\nWaiting for HTTP server to come up...')
   while HTTP_SERVER is None:
     time.sleep(0.1)
-  print '\n\nShowtime!  (^o^)/'
-  print '\nPlease point web browsers to: "{}"'.format(socket.gethostbyname(socket.gethostname()))
+  print('\n\nShowtime!  (^o^)/')
+  print('\nPlease point web browsers to: "{}"'.format(socket.gethostbyname(socket.gethostname())))
   serverThread.join()
 
   if __name__ == 'main':
     run()
 except:
-  print traceback.print_exc()
+  print(traceback.print_exc())
   print
   print
   print
-  print 'Press "Enter" to close...'
-  raw_input()
+  print('Press "Enter" to close...')
+  input()

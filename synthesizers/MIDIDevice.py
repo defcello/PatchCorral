@@ -45,7 +45,7 @@ def getMIDIOutDevices():
 
 ##
 #  Class representing a specific MIDI voice.
-class MIDIVoice(object):
+class MIDIVoice():
 
   ##
   #  Class constructor.
@@ -88,7 +88,7 @@ class MIDIVoice(object):
 ##
 #  Class representing a MIDI Device.  This is an abstract base class that doesn't do anything on its
 #  own.
-class MIDIDevice(object):
+class MIDIDevice():
 
   ##
   #  Class initializer.
@@ -107,7 +107,7 @@ class MIDIDevice(object):
         raise ValueError('Given id "{0}" is outside the expected range (0-{1}).'.format(id, portCount))
       self.portNum = id
       self.portName = self.midi.getPortName(id)
-    elif isinstance(id, basestring):
+    elif isinstance(id, str):
       #Selecting interface by port name.
       self.portName = id
       portNames = list(self.midi.getPortName(port) for port in range(self.midi.getPortCount()))
@@ -248,7 +248,7 @@ class MIDIOutDevice(MIDIDevice):
       if self._defaultChannel is None:
         raise ValueError('No default channel defined and no channel given.')
       channel = self._defaultChannel
-    if isinstance(note, basestring):
+    if isinstance(note, str):
       note = self.noteName2Num(note)
     onMsg = rtmidi.MidiMessage.noteOn(channel, note, vel)
     offMsg = rtmidi.MidiMessage.noteOff(channel, note)
