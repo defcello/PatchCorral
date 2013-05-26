@@ -1,3 +1,21 @@
+﻿####################################################################################################
+# Copyright 2013 John Crawford
+#
+# This file is part of SynthServer.
+#
+# SynthServer is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# SynthServer is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with SynthServer.  If not, see <http://www.gnu.org/licenses/>.
+####################################################################################################
 
 from synthesizers.roland_fantom import RolandFantomXR
 from synthesizers.nord import NordStage2
@@ -49,7 +67,7 @@ else:
   print '\nFound Nord MIDI Device (for "Keyboard 1")!  d(^o^)b'
   #Have this input device forward its messages to the Roland Fantom-XR.
   MIDI_IN_NORD_USB.setMIDIOutDevice(MIDI_OUT_ROLAND, COEVoices.PARTS['Keyboard 1'].getChannel())
-#If we found the generic USB->MIDI device, 
+#If we found the generic USB->MIDI device,
 if MIDI_IN_GEN_USB is None:
   print '\n\n\nERROR: Unable to find USB->MIDI device (for "Keyboard 2").  ;_;'
 else:
@@ -110,7 +128,7 @@ def getHomePage():
   </html>
   """
   return page
-  
+
 ##
 #  Returns the program selection page for the given instrument.
 #  @param postVals Dictionary of lists

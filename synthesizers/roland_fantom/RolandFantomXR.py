@@ -1,3 +1,22 @@
+﻿####################################################################################################
+# Copyright 2013 John Crawford
+#
+# This file is part of SynthServer.
+#
+# SynthServer is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# SynthServer is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with SynthServer.  If not, see <http://www.gnu.org/licenses/>.
+####################################################################################################
+
 ## @file
 #  Module for communicating with Roland Fantom-XR connected over USB MIDI.
 #  @date 3/8/2013 Created file.  -jc
@@ -51,7 +70,7 @@ import rtmidi
 # WIND
 
 class MIDIOutDevice(MIDIDevice.MIDIOutDevice):
-  
+
   def __init__(self, id='FANTOM-X', defaultChannel=None):
     voices = list(itertools.chain(*map(
       lambda x: x.PATCHES,
@@ -60,4 +79,4 @@ class MIDIOutDevice(MIDIDevice.MIDIOutDevice):
       ],
     )))
     MIDIDevice.MIDIOutDevice.__init__(self, id, voices, defaultChannel)
-      
+
