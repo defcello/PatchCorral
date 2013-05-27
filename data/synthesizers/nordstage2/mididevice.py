@@ -22,7 +22,7 @@
 #  @date 3/8/2013 Created file.  -jc
 #  @author John Crawford
 
-from .. import MIDIDevice
+from engine import MIDIDevice
 import rtmidi
 
 
