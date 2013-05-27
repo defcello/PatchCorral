@@ -26,6 +26,7 @@ from .. import MIDIDevice
 import rtmidi
 
 
+
 PROGRAMS = [
   MIDIDevice.MIDIVoice('ChildrenOfEden', 0, 3, 98, '', 'D:20:4'),
 ]
@@ -69,10 +70,14 @@ class MIDIOutDevice(MIDIDevice.MIDIOutDevice):
     'E.Piano1 EPiano 2 Mk I ClosIdeal': (49, 3),
   }
 
+  ID = 'Nord Stage 2 MIDI'  #Note that at least in Windows this can sometimes show up like "4- FANTOM-X"
+
   ##
   #  @param defaultChannel If given, will use this channel by default for all outgoing commands.
-  def __init__(self, id='Nord Stage 2 MIDI', defaultChannel=None):
-    MIDIDevice.MIDIOutDevice.__init__(self, id, PROGRAMS, defaultChannel)
+  def __init__(self, id=None, defaultChannel=None):
+    if id is None:
+      id = MIDIOutDevice.ID
+    super().__init__(self, id, PROGRAMS, defaultChannel)
 
     #Select the first available program.
     self.programChange(self.voices[0])

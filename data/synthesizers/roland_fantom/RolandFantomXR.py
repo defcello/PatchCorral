@@ -71,12 +71,16 @@ import rtmidi
 
 class MIDIOutDevice(MIDIDevice.MIDIOutDevice):
 
-  def __init__(self, id='FANTOM-X', defaultChannel=None):
+  ID = 'FANTOM-X'  #Note that at least in Windows this can sometimes show up like "4- FANTOM-X"
+
+  def __init__(self, id=None, defaultChannel=None):
+    if id is None:
+      MIDIOutDevice.ID
     voices = list(itertools.chain(*map(
       lambda x: x.PATCHES,
       [
         UserVoices, PRA, PRB, PRC, PRD, PRE, PRF, PRG, PRH, GM, SRX04, SRX05, SRX06, SRX07, SRX09,
       ],
     )))
-    MIDIDevice.MIDIOutDevice.__init__(self, id, voices, defaultChannel)
+    super().__init__(id, voices, defaultChannel)
 

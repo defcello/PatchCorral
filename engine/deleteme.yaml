@@ -1,0 +1,16 @@
+!!python/object:addressabletree.AddressableTree
+children:
+- !!python/object:addressabletree.AddressableTree
+  children: []
+  key: lol
+  value: 5
+- !!python/object:addressabletree.AddressableTree
+  children:
+  - !!python/object:addressabletree.AddressableTree
+    children: []
+    key: rofl
+    value: w/e
+  key: mp3
+  value: null
+key: null
+value: null
