@@ -20,7 +20,7 @@
 ## @file
 #  Voices to be used with the musical "Children of Eden".
 
-from synthesizers.MIDIDevice import MIDIVoice
+from engine.mididevice import MIDIVoice
 import itertools
 import traceback
 

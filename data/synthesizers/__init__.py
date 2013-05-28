@@ -17,12 +17,12 @@
 # along with SynthServer.  If not, see <http://www.gnu.org/licenses/>.
 ####################################################################################################
 
-import nordstage2
-import rolandfantomxr
+from data.synthesizers.nordstage2 import mididevice as nordstage2
+from data.synthesizers.rolandfantomxr import mididevice as rolandfantomxr
 
 
 
 SYNTHESIZERS = {
-  nordstage2.ID: nordstage2.mididevice,
-  rolandfantomxr.ID: rolandfantomxr.mididevice,
+  nordstage2.MIDIOutDevice.ID: nordstage2,
+  rolandfantomxr.MIDIOutDevice.ID: rolandfantomxr,
 }

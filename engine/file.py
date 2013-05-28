@@ -38,6 +38,8 @@ class File():
   def __init__(self, filename=None):
     self.filename = filename
     if filename is not None:
+      if not os.path.exists(filename):
+        open(filename, 'w').close()
       self.load()
 
   ##

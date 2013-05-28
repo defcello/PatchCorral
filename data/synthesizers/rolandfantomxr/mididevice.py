@@ -23,8 +23,8 @@
 #  @author John Crawford
 
 from . import UserVoices, PRA, PRB, PRC, PRD, PRE, PRF, PRG, PRH, GM, SRX04, SRX05, SRX06, SRX07, SRX09
+from engine import mididevice
 import itertools
-from synthesizers import MIDIDevice
 import rtmidi
 
 
@@ -69,7 +69,7 @@ import rtmidi
 # VOX
 # WIND
 
-class MIDIOutDevice(MIDIDevice.MIDIOutDevice):
+class MIDIOutDevice(mididevice.MIDIOutDevice):
 
   ID = 'FANTOM-X'  #Note that at least in Windows this can sometimes show up like "4- FANTOM-X"
 

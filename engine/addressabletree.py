@@ -89,7 +89,7 @@ class AddressableTree():
   #  @param value Value to store at "key".
   #  @return "None".
   def set(self, key, value=None):
-    self.__setitem__(key)
+    self.__setitem__(key, value)
 
   ##
   #  Stores the given value at the given key.

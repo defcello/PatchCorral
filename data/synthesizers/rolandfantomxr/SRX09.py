@@ -22,7 +22,7 @@
 #  @date 3/10/2013 Created file.  -jc
 #  @author John Crawford
 
-from synthesizers.MIDIDevice import MIDIVoice
+from engine.mididevice import MIDIVoice
 
 
 

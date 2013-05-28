@@ -20,7 +20,7 @@
 ## @file
 #  Represents a YAML file, simplying procedures such as loading and saving.
 
-import file
+from . import file
 import yaml
 
 

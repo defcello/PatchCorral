@@ -22,25 +22,26 @@
 #  @date 3/8/2013 Created file.  -jc
 #  @author John Crawford
 
-from engine import MIDIDevice
+from engine import mididevice
 import rtmidi
 
 
 
 PROGRAMS = [
-  MIDIDevice.MIDIVoice('ChildrenOfEden', 0, 3, 98, '', 'D:20:4'),
+  mididevice.MIDIVoice('ChildrenOfEden', 0, 3, 98, '', 'D:20:4'),
 ]
 
-class MIDIInDevice(MIDIDevice.MIDIInDevice):
+class MIDIInDevice(mididevice.MIDIInDevice):
 
   ##
   #  @param defaultChannel If given, will use this channel by default for all outgoing commands.
   def __init__(self, id='Nord Stage 2 MIDI'):
-    MIDIDevice.MIDIInDevice.__init__(self, id)
+    mididevice.MIDIInDevice.__init__(self, id)
 
 
-class MIDIOutDevice(MIDIDevice.MIDIOutDevice):
+class MIDIOutDevice(mididevice.MIDIOutDevice):
 
+  ## Call Control values for various operations.
   cc = {
     'Organ': {
       'Enable': 101,
@@ -56,6 +57,7 @@ class MIDIOutDevice(MIDIDevice.MIDIOutDevice):
     },
   }
 
+  ## Samples available to the synthesizer module.
   synthSamples = {
     'SplitChoirAH': 20,
     'Choir ste': 21,
@@ -64,13 +66,14 @@ class MIDIOutDevice(MIDIDevice.MIDIOutDevice):
     'Celeste': 71,
   }
 
+  ## Pianos available to the piano module.
   pianoProgs = {
     'Grand Grand Imperial Bdorf': (0, 0),
     'Upright BlueSwede Ostl&Alm': (40, 0),
     'E.Piano1 EPiano 2 Mk I ClosIdeal': (49, 3),
   }
 
-  ID = 'Nord Stage 2 MIDI'  #Note that at least in Windows this can sometimes show up like "4- FANTOM-X"
+  ID = 'Nord Stage 2 MIDI'
 
   ##
   #  @param defaultChannel If given, will use this channel by default for all outgoing commands.
@@ -78,7 +81,6 @@ class MIDIOutDevice(MIDIDevice.MIDIOutDevice):
     if id is None:
       id = MIDIOutDevice.ID
     super().__init__(self, id, PROGRAMS, defaultChannel)
-
     #Select the first available program.
     self.programChange(self.voices[0])
     # msgs = []
