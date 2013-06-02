@@ -21,13 +21,15 @@
 #  Initializes the GUI for SynthNav.
 
 from PySide import QtGui
+from src.gui import util
 
 
 
-class Ui_MainWindow():
+class MainWindow(QtGui.QMainWindow):
+  def __init__(self, parent=None):
+    super().__init__(parent)
+    self.setupUi(self)
+    
   def setupUi(self, parent=None):
-    widget = QtGui.QWidget()
-    widget.show()
-    widget.setWindowTitle('SynthNav')
-    
-    
+    self.setWindowTitle('SynthNav')
+    self.setGeometry(300, 300, 800, 600)
