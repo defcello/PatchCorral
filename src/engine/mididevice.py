@@ -50,25 +50,27 @@ class MIDIVoice():
   ##
   #  Class constructor.
   #  @param name String
+  #  @param device MIDIOutDevice object
+  #  @param channel MIDI Channcel (1-16)
   #  @param msb Most Significant Bit
   #  @param lsb Least Significant Bit
   #  @param pc Program Change value
   #  @param category Category of the voice
   #  @param voiceNum Number of the voice as displayed on the device
-  def __init__(self, name, msb, lsb, pc, category=None, voiceNum=None):
+  def __init__(self, name, device, channel, msb, lsb, pc, category=None, voiceNum=None):
     self.name = name
     self.msb = msb
     self.lsb = lsb
     self._pc = pc
+    self.device = device
+    self.channel = channel
     self.category = category
     self.voiceNum = voiceNum
 
   ##
   #  Sends the MIDI messages that will select this voice on the given device.
-  #  @param device MIDIDevice object
-  #  @param channel Channel number (0-15)
   #  @return None.
-  def pc(self, device, channel):
+  def pc(self):
     device.sendMessage(rtmidi.MidiMessage.controllerEvent(channel, 0x00, self.msb))
     device.sendMessage(rtmidi.MidiMessage.controllerEvent(channel, 0x20, self.lsb))
     device.sendMessage(rtmidi.MidiMessage.programChange(channel, self._pc))
@@ -77,12 +79,14 @@ class MIDIVoice():
   #  Method for converting this object to string.  Prints out essential information.
   def __str__(self):
     return (
-      'Name: {0}\n'.format(self.name) +
-      'Category: {0}\n'.format(self.category) +
-      'VoiceNum: {0}\n'.format(self.voiceNum) +
-      'MSB: {0}\n'.format(self.msb) +
-      'LSB: {0}\n'.format(self.lsb) +
-      'PC: {0}\n'.format(self._pc)
+      'Name: {}\n'.format(self.name) +
+      'Device: {}\n'.format(self.device) +
+      'Channel: {}\n'.format(self.channel) +
+      'Category: {}\n'.format(self.category) +
+      'VoiceNum: {}\n'.format(self.voiceNum) +
+      'MSB: {}\n'.format(self.msb) +
+      'LSB: {}\n'.format(self.lsb) +
+      'PC: {}\n'.format(self._pc)
     )
 
 ##
@@ -94,29 +98,29 @@ class MIDIDevice():
   #  Class initializer.
   #  @param id Identifier for the device interface.  Can be an integer (index) or a string (name).
   #  @pre "self.midi" has been initialized.
-  def __init__(self, id):
+  def __init__(self, port, name):
     # self.midi = None  #INITIALIZE THIS IN THE SUBCLASS!
-    self.portNum = None
-    self.portName = None
 
-    #Find the MIDI Input details.
-    if isinstance(id, int):
-      #Selecting interface by port number.
-      portCount = self.midi.getPortCount()
-      if 0 > id > portCount:
-        raise ValueError('Given id "{0}" is outside the expected range (0-{1}).'.format(id, portCount))
-      self.portNum = id
-      self.portName = self.midi.getPortName(id)
-    elif isinstance(id, str):
-      #Selecting interface by port name.
-      self.portName = id
+    #Resolve missing details.
+    if port is None:
+      if name is None:
+        raise ValueError('Must provide at least the "name" or "port" to identify a MIDI device.')
       portNames = list(self.midi.getPortName(port) for port in range(self.midi.getPortCount()))
       for port, portName in enumerate(portNames):
         if portName == id:
           self.portNum = port
           break
       else:
-        raise ValueError('Unable to find id "{0}" in ports "{1}".'.format(id, portNames))
+        raise ValueError('Unable to find device matching name "{}" in list "{}".'.format(id, portNames))
+    else:
+      portCount = self.midi.getPortCount()
+      if 0 > id > portCount:
+        raise ValueError('Given port "{}" is outside the expected range (0-{}).'.format(id, portCount))
+      self.portNum = port
+    if name is None:
+      self.portName = self.midi.getPortName(port)
+    else:
+      self.portName = name
 
     #Open the MIDI port!
     self.midi.openPort(self.portNum)
@@ -167,6 +171,8 @@ class MIDIInDevice(MIDIDevice):
 #  Class representing a MIDI Output Device.
 class MIDIOutDevice(MIDIDevice):
 
+  ID = 'Generic USB-MIDI Device'
+
   ## Number of the note "A0", usually the lowest supported note on the MIDI device.
   noteNumA0 = 21
 
@@ -193,16 +199,17 @@ class MIDIOutDevice(MIDIDevice):
 
   ##
   #  Class initializer.
-  #  @param id Identifier for the device input and output interfaces.  Can be an integer (index) or
-  #    a string (name).
+  #  @param port Integer port number for the MIDI device.
+  #  @param name String name of the MIDI device.  If "None", will use this class's ID string.
   #  @param voices List of MIDIVoice objects available from this MIDI Device.
   #  @param defaultChannel If given, will use this channel by default for all outgoing commands.
-  def __init__(self, id, voices, defaultChannel=None):
+  def __init__(self, port, name, voices, defaultChannel=None):
+    if name is None:
+      name = MIDIOutDevice.ID
     self.midi = rtmidi.RtMidiOut()
-    MIDIDevice.__init__(self, id)
+    super().__init__(port, name)
     self.voices = voices
     self._defaultChannel = defaultChannel
-    self.currVoice = {}
     self.sendLock = threading.Lock()
 
   ##
@@ -260,21 +267,6 @@ class MIDIOutDevice(MIDIDevice):
     t.start()
 
   ##
-  #  Changes the program on the given channel to the supplied voice.
-  #  @param voice MIDIVoice object
-  #  @param channel Channel to issue the program change on.  If "None", will use the default channel
-  #    for this object.
-  #  @return The give MIDIVoice object for convenience.
-  def programChange(self, voice, channel=None):
-    if channel is None:
-      if self._defaultChannel is None:
-        raise ValueError('No default channel defined and no channel given.')
-      channel = self._defaultChannel
-    self.currVoice[channel] = voice
-    voice.pc(self, channel)
-    return voice
-
-  ##
   #  Sends the given message to the MIDI device.
   #  @param msg rtmidi.MidiMessage object
   #  @return None.
@@ -284,7 +276,7 @@ class MIDIOutDevice(MIDIDevice):
 
   ##
   #  Sends the given messages to the MIDI device.
-  #  @param msgs Any number of rtmidi.MidiMessage objects (e.g. "re.match(r'SYNTH', v.category)").
+  #  @param msgs Any number of rtmidi.MidiMessage objects.
   #  @return None.
   def sendMessages(self, *msgs):
     for msg in msgs:

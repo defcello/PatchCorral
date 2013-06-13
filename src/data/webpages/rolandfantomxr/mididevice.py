@@ -25,6 +25,7 @@
 from . import UserVoices, PRA, PRB, PRC, PRD, PRE, PRF, PRG, PRH, GM, SRX04, SRX05, SRX06, SRX07, SRX09
 from src.engine import mididevice
 import itertools
+import rtmidi
 
 
 
@@ -78,7 +79,7 @@ class MIDIOutDevice(mididevice.MIDIOutDevice):
   #  @param name String name of the MIDI device.  If "None", will use this class's ID string. 
   #  @param defaultChannel If given, will use this channel by default for all outgoing commands.
   def __init__(self, port, name, defaultChannel=None):
-    patches = list(itertools.chain(*map(
+    voices_temp = list(itertools.chain(*map(
       lambda x: x.PATCHES,
       [
         UserVoices, PRA, PRB, PRC, PRD, PRE, PRF, PRG, PRH, GM, SRX04, SRX05, SRX06, SRX07, SRX09,
@@ -86,7 +87,7 @@ class MIDIOutDevice(mididevice.MIDIOutDevice):
     )))
     voices = []
     for ch in range(1, 17):
-      for vname, msb, lsb, pc, group, vnn in patches:
+      for vname, msb, lsb, pc, group, vnn in _patches:
         voices.append(MIDIVoice(vname, self, ch, msb, lsb, pc, group, vnn))
     super().__init__(port, name, voices, defaultChannel)
 

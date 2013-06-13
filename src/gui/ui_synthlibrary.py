@@ -25,19 +25,25 @@ from PySide import QtGui
 
 
 class MainWidget(QtGui.QWidget):
-  def __init__(self, parent):
+
+  def __init__(self, parent, synthNav):
     super().__init__(parent)
-    self.setupUi(self)
-    
-  def setupUi(self):
+    self.synthNav = synthNav
     self.setWindowTitle('SynthLibrary')
     self.setGeometry(300, 300, 800, 600)
-    
     #Add the selector group.
-    
+    filter_coarse = CoarseFilterWidget(self, self.synthNav)
 
 class CoarseFilterWidget(QtGui.QWidget):
-  def __init__(self, parent):
-    super().__init__(parent):
-    self.setupUi(self)
-  
+
+  def __init__(self, parent, synthNav):
+    self.synthNav = synthNav
+    super().__init__(parent)
+    #Synth Select
+    lv_synth = QtGui.QListWidget(self)
+    lv_synth.addItems(map(lambda x: x.ID, self.synthNav.getMIDIOutDevs()))
+    #Channel Select
+    lv_channel = QtGui.QListWidget(self)
+    #Group Select
+    lv_group = QtGui.QListWidget(self)
+

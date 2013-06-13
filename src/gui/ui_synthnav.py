@@ -29,7 +29,7 @@ class MainWindow(QtGui.QMainWindow):
   def __init__(self, parent=None):
     super().__init__(parent)
     self.setupUi(self)
-    
+
   def setupUi(self, parent=None):
     self.setWindowTitle('SynthNav')
     self.setGeometry(300, 300, 800, 600)

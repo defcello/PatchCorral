@@ -22,13 +22,13 @@
 #  @date 3/8/2013 Created file.  -jc
 #  @author John Crawford
 
-from engine import mididevice
+from src.engine import mididevice
 import rtmidi
 
 
 
 PROGRAMS = [
-  mididevice.MIDIVoice('ChildrenOfEden', 0, 3, 98, '', 'D:20:4'),
+  ('ChildrenOfEden', 0, 3, 98, '', 'D:20:4'),
 ]
 
 class MIDIInDevice(mididevice.MIDIInDevice):
@@ -76,11 +76,16 @@ class MIDIOutDevice(mididevice.MIDIOutDevice):
   ID = 'Nord Stage 2 MIDI'
 
   ##
+  #  Class initializer.
+  #  @param port Integer port number for the MIDI device.
+  #  @param name String name of the MIDI device.  If "None", will use this class's ID string.
   #  @param defaultChannel If given, will use this channel by default for all outgoing commands.
-  def __init__(self, id=None, defaultChannel=None):
-    if id is None:
-      id = MIDIOutDevice.ID
-    super().__init__(self, id, PROGRAMS, defaultChannel)
+  def __init__(self, port, name, defaultChannel=None):
+    global PROGRAMS
+    voices = []
+    for name, msb, lsb, pc, group, vnn in PROGRAMS:
+      voices.append(mididevice.MIDIVoice(name, self, 0, msb, lsb, pc, group, vnn))
+    super().__init__(self, id, voices, defaultChannel)
     #Select the first available program.
     self.programChange(self.voices[0])
     # msgs = []

@@ -23,7 +23,7 @@
 from . import addressabletree
 from . import yamlfile
 from . import mididevice
-from data import synthesizers
+from src.data import synthesizers
 import re
 
 
@@ -52,14 +52,14 @@ def getMIDIOutDevice(port=None, name=None, midiDevs=None):
   if midiDevs is None:
     midiDevs = mididevice.getMIDIOutDevices()
   port, name, dev = _getMIDIDevice(midiDevs, port, name)
-  return dev.MIDIOutDevice(port)
+  return dev.MIDIOutDevice(port, name)
 
 ##
 #  Resolves the given information to a MIDI device.
 #  @param midiDevs List of 2-tuples "(port number, device name)".
 #  @param port Integer.  If "None", will be resolved using "name".
 #  @param name String.  If "None", will be resolved using "port".
-#  @return engine.mididevice.MIDIDevice object.
+#  @return 3-tuple "(port, name, src.data.synthesizers.*.mididevice module)".
 def _getMIDIDevice(midiDevs, port=None, name=None):
   #The challenge is we have to resolve the TYPE of synthesizer.  The name is
   #going to be the easiest way to pull this off.
@@ -85,7 +85,10 @@ def _getMIDIDevice(midiDevs, port=None, name=None):
     raise ValueError('Unable to parse synthesizer ID from name "{}".'.format(name))
   id = m.group(1)
   #Match the ID to a mididevice and return.
-  return port, name, synthesizers.SYNTHESIZERS[id]
+  try:
+    return port, name, synthesizers.SYNTHESIZERS[id]
+  except KeyError:
+    return port, name, synthesizers.SYNTHESIZERS['default']
 
 ##
 #  Class for navigating voices within a single synthesizer.  Supports generation
@@ -106,7 +109,8 @@ class SynthNav():
       self.userdataFile.setRoot(self.userdata)
     self.midiInDevs = None
     self.midiOutDevs = None
-    self.currVoiceList = None
+    self.fullVoiceList = None
+    self.currVoiceList = []
     self.favVoicesList = None
     self.currMIDIOutDev = None
     self.currVoiceIdx = None
@@ -139,20 +143,34 @@ class SynthNav():
   #  @Return 0-based integer.
   def getCurrVoiceIdx(self):
     return self.currVoiceIdx
-    
+  
+  ##
+  #  Returns the voices that are currently available from the filtered list.
+  #  @return List of MIDIVoice objects representing the current available selection.
   def getCurrVoiceList(self):
     return list(self.currVoiceList)
+    
+  ##
+  #  Returns the currently-available MIDI output devices.
+  #  @return A list of MIDIOutDevice objects.
+  def getMIDIOutDevs(self):
+    return self.midiOutDevs
 
   ##
-  #  Returns an iterator that steps over the current voice list.
-  #  @param filter For convenience, if not "None", will repopulate the current
-  #    voice list using the given filter.
+  #  Returns an iterator that steps over the voices.  Supports filtering.
+  #  @param filter Python statement that can be evaluated such that "v" stands for a MIDIVoice
+  #    object.
+  #  @param voices Optional list of voices to filter.  If "None", will use the unfiltered master
+  #    list.
   #  @return Iterator object that returns MIDIVoice objects.
-  def iter(self, filter=None):
-    if filter is not None:
-      self.newVoiceList(filter)
-    for v in self.currVoiceList:
-      yield v
+  def iter(self, filter='True', voices=None):
+    if voices is None:
+      voiceList = self.fullVoiceList
+    else:
+      voiceList = voices
+    for v in self.fullVoiceList:
+      if eval(filter):
+        yield v
 
   ##
   #  Loads the voice list under the given name and sets it as the current voice
@@ -165,7 +183,7 @@ class SynthNav():
       currVoice = self.currVoiceList[self.currVoiceIdx]
     else:
       currVoice = None
-    self.currVoiceList = self.userdata[(self.currMIDIOutDev.ID, name)]
+    self.currVoiceList = self.userdata[(name,)]
     #Try to reselect the previous voice.
     if currVoice is not None:
       try:
@@ -179,27 +197,19 @@ class SynthNav():
   #  Creates a new voice list using the given filter.
   #  @param filter Filter string for generating the list (see
   #    mididevice.MIDIOutDevice.iter for more information).
+  #  @param subtractive List of voices to use as the unfiltered data.  If "None", will use the
+  #    unfiltered master voice list.
   #  @return "None".
-  def newVoiceList(self, filter='True'):
-    if self.currVoiceIdx is not None:
-      currVoice = self.currVoiceList[self.currVoiceIdx]
-    else:
-      currVoice = None
-    self.currVoiceList = list(self.currMIDIOutDev.iter(filter))
-    if currVoice is not None:
-      try:
-        self.currVoiceIdx = self.currVoiceList.index(currVoice)
-      except ValueError:
-        self.currVoiceIdx = None
-    else:
-      self.currVoiceIdx = None
+  def newVoiceList(self, filter='True', voices=None):
+    return list(self.iter(filter, voices))
 
   ##
   #  Refreshes the internal list of available MIDI devices.
   #  @return "None".
   def refreshMIDIDevices(self):
     self.midiInDevs = mididevice.getMIDIInDevices()
-    self.midiOutDevs = mididevice.getMIDIOutDevices()
+    midiOutDevs = mididevice.getMIDIOutDevices()
+    self.midiOutDevs = list(map(lambda dev: getMIDIOutDevice(dev[0], dev[1]), midiOutDevs))
 
   ##
   #  Stores the current voice list to the given name.

@@ -22,7 +22,7 @@
 #  @date 3/8/2013 Created file.  -jc
 #  @author John Crawford
 
-from . import UserVoices, PRA, PRB, PRC, PRD, PRE, PRF, PRG, PRH, GM, SRX04, SRX05, SRX06, SRX07, SRX09
+from . import GM
 from src.engine import mididevice
 import itertools
 
@@ -70,7 +70,7 @@ import itertools
 
 class MIDIOutDevice(mididevice.MIDIOutDevice):
 
-  ID = 'FANTOM-X'  #Note that at least in Windows this can sometimes show up like "4- FANTOM-X"
+  ID = 'Microsoft GS Wavetable Synth'
 
   ##
   #  Class initializer.
@@ -78,15 +78,10 @@ class MIDIOutDevice(mididevice.MIDIOutDevice):
   #  @param name String name of the MIDI device.  If "None", will use this class's ID string. 
   #  @param defaultChannel If given, will use this channel by default for all outgoing commands.
   def __init__(self, port, name, defaultChannel=None):
-    patches = list(itertools.chain(*map(
-      lambda x: x.PATCHES,
-      [
-        UserVoices, PRA, PRB, PRC, PRD, PRE, PRF, PRG, PRH, GM, SRX04, SRX05, SRX06, SRX07, SRX09,
-      ],
-    )))
+    patches = list(GM.PATCHES)
     voices = []
     for ch in range(1, 17):
       for vname, msb, lsb, pc, group, vnn in patches:
-        voices.append(MIDIVoice(vname, self, ch, msb, lsb, pc, group, vnn))
+        voices.append(mididevice.MIDIVoice(vname, self, ch, msb, lsb, pc, group, vnn))
     super().__init__(port, name, voices, defaultChannel)
 
