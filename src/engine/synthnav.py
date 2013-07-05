@@ -25,6 +25,7 @@ from . import yamlfile
 from . import mididevice
 from src.data import synthesizers
 import re
+import itertools
 
 
 
@@ -100,7 +101,6 @@ class SynthNav():
   #  Class initializer.
   #  @return "None".
   def __init__(self):
-    self.iter = None
     self.userdataFile = yamlfile.File('userdata.yaml')
     self.userdata = self.userdataFile.getRoot()  #Note that any modifications to this will modify
                                                  #the internal structure of "userdataFile".
@@ -201,7 +201,7 @@ class SynthNav():
   #    unfiltered master voice list.
   #  @return "None".
   def newVoiceList(self, filter='True', voices=None):
-    return list(self.iter(filter, voices))
+    self.currVoiceList = list(self.iter(filter, voices))
 
   ##
   #  Refreshes the internal list of available MIDI devices.
@@ -209,7 +209,8 @@ class SynthNav():
   def refreshMIDIDevices(self):
     self.midiInDevs = mididevice.getMIDIInDevices()
     midiOutDevs = mididevice.getMIDIOutDevices()
-    self.midiOutDevs = list(map(lambda dev: getMIDIOutDevice(dev[0], dev[1]), midiOutDevs))
+    self.midiOutDevs = list((getMIDIOutDevice(dev[0], dev[1]) for dev in midiOutDevs))
+    self.fullVoiceList = list(itertools.chain(*(x.getVoiceList() for x in self.midiOutDevs)))
 
   ##
   #  Stores the current voice list to the given name.
@@ -230,30 +231,4 @@ class SynthNav():
     #We want it to throw an index error if there's a problem without messing up
     #the state of the object, so order matters!
     voice = self.currVoiceList[idx]
-    self.currVoiceIdx = idx
-    self.currMIDIOutDev.programChange(voice, channel)
-
-  ##
-  #  Sets the MIDI input device to the one matching the given ID.
-  #  @param id String name of the device or the port number (integer).
-  #  @return "None".
-  def setMIDIInDevice(self, id):
-    if isinstance(id, int):
-      self.currMIDIInDev = getMIDIInDevice(id, None, self.midiInDevs)
-    else:
-      self.currMIDIInDev = getMIDIInDevice(None, id, self.midiInDevs)
-
-  ##
-  #  Sets the MIDI output device to the one matching the given ID.
-  #  @param id String name of the device or the port number (integer).
-  #  @return "None".
-  def setMIDIOutDevice(self, id):
-    if isinstance(id, int):
-      self.currMIDIOutDev = getMIDIOutDevice(id, None, self.midiOutDevs)
-    else:
-      self.currMIDIOutDev = getMIDIOutDevice(None, id, self.midiOutDevs)
-    #Initialize the userdata file for the new device.
-    if self.userdata.get( (self.currMIDIOutDev.ID, 'favorites') ) is None:
-      self.userdata.set((self.currMIDIOutDev.ID, 'favorites'), [])   
-      self.userdataFile.save()
-    
+    voice.pc()

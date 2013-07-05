@@ -87,6 +87,6 @@ class MIDIOutDevice(mididevice.MIDIOutDevice):
     voices = []
     for ch in range(1, 17):
       for vname, msb, lsb, pc, group, vnn in patches:
-        voices.append(MIDIVoice(vname, self, ch, msb, lsb, pc, group, vnn))
+        voices.append(mididevice.MIDIVoice(vname, self, ch, msb, lsb, pc, group, vnn))
     super().__init__(port, name, voices, defaultChannel)
 

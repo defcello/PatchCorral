@@ -71,22 +71,24 @@ class MIDIVoice():
   #  Sends the MIDI messages that will select this voice on the given device.
   #  @return None.
   def pc(self):
-    device.sendMessage(rtmidi.MidiMessage.controllerEvent(channel, 0x00, self.msb))
-    device.sendMessage(rtmidi.MidiMessage.controllerEvent(channel, 0x20, self.lsb))
-    device.sendMessage(rtmidi.MidiMessage.programChange(channel, self._pc))
+    self.device.sendMessage(rtmidi.MidiMessage.controllerEvent(self.channel, 0x00, self.msb))
+    self.device.sendMessage(rtmidi.MidiMessage.controllerEvent(self.channel, 0x20, self.lsb))
+    self.device.sendMessage(rtmidi.MidiMessage.programChange(self.channel, self._pc))
 
   ##
   #  Method for converting this object to string.  Prints out essential information.
   def __str__(self):
     return (
-      'Name: {}\n'.format(self.name) +
-      'Device: {}\n'.format(self.device) +
-      'Channel: {}\n'.format(self.channel) +
-      'Category: {}\n'.format(self.category) +
-      'VoiceNum: {}\n'.format(self.voiceNum) +
-      'MSB: {}\n'.format(self.msb) +
-      'LSB: {}\n'.format(self.lsb) +
-      'PC: {}\n'.format(self._pc)
+      'name: {}\n'.format(self.name) +
+      'device: {}\n'.format(self.device) +
+      'device.portNum: {}\n'.format(self.device.portNum) +
+      'device.portName: {}\n'.format(self.device.portName) +
+      'channel: {}\n'.format(self.channel) +
+      'category: {}\n'.format(self.category) +
+      'voiceNum: {}\n'.format(self.voiceNum) +
+      'msb: {}\n'.format(self.msb) +
+      'lsb: {}\n'.format(self.lsb) +
+      '_pc: {}\n'.format(self._pc)
     )
 
 ##
@@ -107,15 +109,15 @@ class MIDIDevice():
         raise ValueError('Must provide at least the "name" or "port" to identify a MIDI device.')
       portNames = list(self.midi.getPortName(port) for port in range(self.midi.getPortCount()))
       for port, portName in enumerate(portNames):
-        if portName == id:
+        if portName == name:
           self.portNum = port
           break
       else:
-        raise ValueError('Unable to find device matching name "{}" in list "{}".'.format(id, portNames))
+        raise ValueError('Unable to find device matching name "{}" in list "{}".'.format(name, portNames))
     else:
       portCount = self.midi.getPortCount()
-      if 0 > id > portCount:
-        raise ValueError('Given port "{}" is outside the expected range (0-{}).'.format(id, portCount))
+      if 0 > port > portCount:
+        raise ValueError('Given port "{}" is outside the expected range (0-{}).'.format(port, portCount))
       self.portNum = port
     if name is None:
       self.portName = self.midi.getPortName(port)
@@ -222,6 +224,11 @@ class MIDIOutDevice(MIDIDevice):
         raise ValueError('No default channel defined and no channel given.')
       self._defaultChannel = defaultChannel
     return self._defaultChannel
+    
+  ##
+  #  Returns the full list of voices available from this device.
+  def getVoiceList(self):
+    return list(self.voices)
 
   ##
   #  Returns an iterator that steps over the voices.  Supports filtering.
