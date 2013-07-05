@@ -41,7 +41,7 @@ class CoarseFilterWidget(QtGui.QWidget):
     super().__init__(parent)
     #Synth Select
     lv_synth = QtGui.QListWidget(self)
-    lv_synth.addItems(map(lambda x: x.ID, self.synthNav.getMIDIOutDevs()))
+    lv_synth.addItems(x.ID for x in self.synthNav.getMIDIOutDevs())
     #Channel Select
     lv_channel = QtGui.QListWidget(self)
     #Group Select

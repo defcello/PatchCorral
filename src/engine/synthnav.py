@@ -130,6 +130,30 @@ class SynthNav():
       favorites.append(voice)
     self.userdata[(self.currMIDIOutDev.ID, 'favorites')] = favorites
     self.userdataFile.save()
+    
+  def getCurrMidiOutDevPortNames(self):
+    return set(x.device.portName for x in self.currVoiceList)
+    
+  def getCurrChannels(self):
+    return set(x.channel for x in self.currVoiceList)
+    
+  def getCurrMidiOutDevPortNums(self):
+    return set(x.device.portNum for x in self.currVoiceList)
+    
+  def getCurrCategories(self):
+    return set(x.category for x in self.currVoiceList)
+    
+  def getCurrVoiceNums(self):
+    return set(x.voiceNum for x in self.currVoiceList)
+    
+  def getCurrMSBs(self):
+    return set(x.msb for x in self.currVoiceList)
+    
+  def getCurrLSBs(self):
+    return set(x.lsb for x in self.currVoiceList)
+    
+  def getCurrPCs(self):
+    return set(x._pc for x in self.currVoiceList)
 
   ##
   #  Returns the current synthesizer voice details.

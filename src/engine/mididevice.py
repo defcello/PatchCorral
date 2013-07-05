@@ -45,7 +45,7 @@ def getMIDIOutDevices():
 
 ##
 #  Class representing a specific MIDI voice.
-class MIDIVoice():
+class MIDIVoice:
 
   ##
   #  Class constructor.
@@ -66,6 +66,34 @@ class MIDIVoice():
     self.channel = channel
     self.category = category
     self.voiceNum = voiceNum
+    
+  def __getitem__(self, key):
+    keys = key.split('.')
+    v = self
+    for k in keys:
+      try:
+        v = getattr(v, k)
+      except AttributeError:
+        raise KeyError('Unable to find key {}.'.format(key))
+    return v
+      
+  def __iter__(self):
+    yield 'name'
+    yield 'msb'
+    yield 'lsb'
+    yield '_pc'
+    yield 'device.portNum'
+    yield 'device.portName'
+    yield 'channel'
+    yield 'category'
+    yield 'voiceNum'
+    
+  def items(self):
+    for key in iter(self):
+      yield key, self[key]
+      
+  def keys(self):
+    return iter(self)
 
   ##
   #  Sends the MIDI messages that will select this voice on the given device.
@@ -78,18 +106,23 @@ class MIDIVoice():
   ##
   #  Method for converting this object to string.  Prints out essential information.
   def __str__(self):
-    return (
-      'name: {}\n'.format(self.name) +
-      'device: {}\n'.format(self.device) +
-      'device.portNum: {}\n'.format(self.device.portNum) +
-      'device.portName: {}\n'.format(self.device.portName) +
-      'channel: {}\n'.format(self.channel) +
-      'category: {}\n'.format(self.category) +
-      'voiceNum: {}\n'.format(self.voiceNum) +
-      'msb: {}\n'.format(self.msb) +
-      'lsb: {}\n'.format(self.lsb) +
-      '_pc: {}\n'.format(self._pc)
-    )
+    return '\n'.join('{}: {}'.format(key, val) for key, val in self.items())
+    # return (
+      # 'name: {}\n'.format(self.name) +
+      # 'device: {}\n'.format(self.device) +
+      # 'device.portNum: {}\n'.format(self.device.portNum) +
+      # 'device.portName: {}\n'.format(self.device.portName) +
+      # 'channel: {}\n'.format(self.channel) +
+      # 'category: {}\n'.format(self.category) +
+      # 'voiceNum: {}\n'.format(self.voiceNum) +
+      # 'msb: {}\n'.format(self.msb) +
+      # 'lsb: {}\n'.format(self.lsb) +
+      # '_pc: {}\n'.format(self._pc)
+    # )
+    
+  def values(self):
+    for key in iter(self):
+      yield self[key]
 
 ##
 #  Class representing a MIDI Device.  This is an abstract base class that doesn't do anything on its
