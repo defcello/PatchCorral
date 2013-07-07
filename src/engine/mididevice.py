@@ -159,6 +159,9 @@ class MIDIDevice():
 
     #Open the MIDI port!
     self.midi.openPort(self.portNum)
+    
+  def getPortName(self):
+    return self.portName
 
 ##
 #  Class representing a MIDI Input Device.

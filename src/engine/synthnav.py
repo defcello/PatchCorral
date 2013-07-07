@@ -112,7 +112,7 @@ class SynthNav():
     self.fullVoiceList = None
     self.currVoiceList = []
     self.favVoicesList = None
-    self.currMIDIOutDev = None
+    self.currFilter = None
     self.currVoiceIdx = None
     #Call initialization functions.
     self.refreshMIDIDevices()
@@ -125,32 +125,32 @@ class SynthNav():
   def addFavoriteVoice(self, voice=None):
     if voice is None:
       voice = self.getCurrVoice()
-    favorites = self.userdata.get((self.currMIDIOutDev.ID, 'favorites'), [])
+    favorites = self.userdata.get((voice.device.getPortName(), 'favorites'), [])
     if voice not in favorites:
       favorites.append(voice)
-    self.userdata[(self.currMIDIOutDev.ID, 'favorites')] = favorites
+    self.userdata[(voice.device.getPortName(), 'favorites')] = favorites
     self.userdataFile.save()
-    
-  def getCurrMidiOutDevPortNames(self):
-    return set(x.device.portName for x in self.currVoiceList)
-    
-  def getCurrChannels(self):
-    return set(x.channel for x in self.currVoiceList)
-    
-  def getCurrMidiOutDevPortNums(self):
-    return set(x.device.portNum for x in self.currVoiceList)
     
   def getCurrCategories(self):
     return set(x.category for x in self.currVoiceList)
     
-  def getCurrVoiceNums(self):
-    return set(x.voiceNum for x in self.currVoiceList)
+  def getCurrChannels(self):
+    return set(x.channel for x in self.currVoiceList)
     
-  def getCurrMSBs(self):
-    return set(x.msb for x in self.currVoiceList)
+  def getCurrFilter(self):
+    return self.currFilter
     
   def getCurrLSBs(self):
     return set(x.lsb for x in self.currVoiceList)
+    
+  def getCurrMidiOutDevPortNames(self):
+    return set(x.device.portName for x in self.currVoiceList)
+    
+  def getCurrMidiOutDevPortNums(self):
+    return set(x.device.portNum for x in self.currVoiceList)
+    
+  def getCurrMSBs(self):
+    return set(x.msb for x in self.currVoiceList)
     
   def getCurrPCs(self):
     return set(x._pc for x in self.currVoiceList)
@@ -173,6 +173,9 @@ class SynthNav():
   #  @return List of MIDIVoice objects representing the current available selection.
   def getCurrVoiceList(self):
     return list(self.currVoiceList)
+    
+  def getCurrVoiceNums(self):
+    return set(x.voiceNum for x in self.currVoiceList)
     
   ##
   #  Returns the currently-available MIDI output devices.
@@ -226,6 +229,7 @@ class SynthNav():
   #  @return "None".
   def newVoiceList(self, filter='True', voices=None):
     self.currVoiceList = list(self.iter(filter, voices))
+    self.currFilter = filter
 
   ##
   #  Refreshes the internal list of available MIDI devices.
@@ -235,13 +239,14 @@ class SynthNav():
     midiOutDevs = mididevice.getMIDIOutDevices()
     self.midiOutDevs = list((getMIDIOutDevice(dev[0], dev[1]) for dev in midiOutDevs))
     self.fullVoiceList = list(itertools.chain(*(x.getVoiceList() for x in self.midiOutDevs)))
+    self.newVoiceList()
 
   ##
   #  Stores the current voice list to the given name.
   #  @param name Name to store the list under.
   #  @return "None".
   def saveVoiceList(self, name):
-    self.userdata.set((self.currMIDIOutDev.ID, name), self.currVoiceList)
+    self.userdata.set((self.currMIDIOutDev.getPortName(), name), self.currVoiceList)
     self.userdataFile.save()
 
   ##
