@@ -35,7 +35,7 @@ class MainWidget(QtGui.QWidget):
     #Add the selector group.
     filter_coarse = CoarseFilterWidget(self, self.synthNav)
     filter_custom = CustomFilterWidget(self, self.synthNav)
-    voice_list = CurrentVoiceListWidget(self, self.synthNav)
+    voice_list = FilteredVoiceListWidget(self, self.synthNav)
     vbox = QtGui.QVBoxLayout(self)
     splitter = QtGui.QSplitter()
     splitter.setOrientation(QtCore.Qt.Orientation.Vertical)
@@ -80,23 +80,23 @@ class CustomFilterWidget(QtGui.QWidget):
     
     vbox = QtGui.QVBoxLayout(self)
     vbox.addWidget(QtGui.QLabel(
-      'Params: {}'.format(','.join(self.synthNav.getCurrVoiceList()[0].keys())),
+      'Params: {}'.format(','.join(self.synthNav.getVoiceList()[0].keys())),
       self,
     ))
     hbox = QtGui.QHBoxLayout()
-    le_filter = QtGui.QLineEdit(self.synthNav.getCurrFilter(), self)
+    le_filter = QtGui.QLineEdit('True', self)
     pb_applyFilter = QtGui.QPushButton('Apply', self)
     hbox.addWidget(le_filter)
     hbox.addWidget(pb_applyFilter)
     vbox.addLayout(hbox)
     
-class CurrentVoiceListWidget(QtGui.QWidget):
+class FilteredVoiceListWidget(QtGui.QWidget):
 
   def __init__(self, parent, synthNav):
     self.synthNav = synthNav
     super().__init__(parent)
     
-    self.voices = self.synthNav.getCurrVoiceList()
+    self.voices = self.synthNav.getFilteredVoiceList()
     self.cols = list(self.voices[0].keys())
     self.numCols = len(self.cols)
     self.tw_currVoices = QtGui.QTableWidget(0, self.numCols, self)
@@ -107,11 +107,18 @@ class CurrentVoiceListWidget(QtGui.QWidget):
     vbox.addWidget(self.tw_currVoices)
     
   def refreshCurrVoices(self):
-    self.voices = self.synthNav.getCurrVoiceList()
+    self.voices = self.synthNav.getFilteredVoiceList()
     self.tw_currVoices.setRowCount(len(self.voices))
     for row, voice in enumerate(self.voices):
       for col, attr in enumerate(self.cols):
         self.tw_currVoices.setItem(row, col, QtGui.QTableWidgetItem(str(voice[attr])))
+    
+class QueuedVoiceListWidget(QtGui.QWidget):
+
+  def __init__(self, parent, synthNav):
+    self.synthNav = synthNav
+    super().__init__(parent)
+    
     
     
     

@@ -109,73 +109,114 @@ class SynthNav():
       self.userdataFile.setRoot(self.userdata)
     self.midiInDevs = None
     self.midiOutDevs = None
-    self.fullVoiceList = None
-    self.currVoiceList = []
-    self.favVoicesList = None
     self.currFilter = None
-    self.currVoiceIdx = None
     #Call initialization functions.
     self.refreshMIDIDevices()
+    self.voiceLists = {
+      'favorites': self.MIDIVoiceList(),
+      'all': self.MIDIVoiceList(),
+      'filtered': self.MIDIVoiceList(),
+      'queued': self.MIDIVoiceList(),
+    }
+
+  ##
+  #  Class for maintaintg lists of voice objects.
+  class MIDIVoiceList:
+    
+    ##
+    #  Class constructor.
+    #  @param voices List of src.engine.mididevice.MIDIVoice objects.
+    #  @return "None".
+    def __init__(self, voices=None):
+      if voices is None:
+        voices = []
+      self.voices = set(voices)
+      
+    ##
+    #  Add the given voice to the list.
+    #  @param voice src.engine.mididevice.MIDIVoice object.
+    #  @return "None".
+    def add(self, voice):
+      self.voices.add(voice)
+      
+    ##
+    #  Add the given voices to the list.
+    #  @param voices List of src.engine.mididevice.MIDIVoice objects.
+    #  @return "None".
+    def adds(self, voices):
+      self.voices |= set(voices)
+      
+    ##
+    #  Enables users to reference a particular voice in the list.
+    #  @param key Integer index.
+    def __getitem__(self, key):
+      print('getitem called with key {}'.format(key))
+      return list(self.voices)[key]
+      
+    ##
+    #  Iterates over the voice list.  This is what gets called by
+    #  "for ... in ...".
+    #  @return Iterator object.
+    def __iter__(self):
+      print('iter called')
+      return iter(self.voices)
+      
+    ##
+    #  Removes the given voice from the list.
+    #  @param voice src.engine.mididevice.MIDIVoice object.
+    #  @return "None".
+    def remove(self, voice):
+      self.voices.remove(voice)
+      
+    ##
+    #  Returns an iterator that, as it is iterated, will apply the current voice
+    #  by calling it's "pc" method.
+    #  @return Iterator object.
+    def iterPC(self):
+      for voice in self.voices:
+        voice.pc()
+        yield voice
 
   ##
   #  Adds the given voice to the "favorites" list.
   #  @param voice mididevice.MIDIVoice object.  If "None", will use the
   #    currently-selected voice.
   #  @return "None".
-  def addFavoriteVoice(self, voice=None):
-    if voice is None:
-      voice = self.getCurrVoice()
-    favorites = self.userdata.get((voice.device.getPortName(), 'favorites'), [])
-    if voice not in favorites:
-      favorites.append(voice)
-    self.userdata[(voice.device.getPortName(), 'favorites')] = favorites
-    self.userdataFile.save()
+  def addFavoriteVoice(self, voice):
+    self.voiceLists['favorites'].add(voice)
     
   def getCurrCategories(self):
-    return set(x.category for x in self.currVoiceList)
+    return set(x.category for x in self.voiceLists['filtered'])
     
   def getCurrChannels(self):
-    return set(x.channel for x in self.currVoiceList)
+    return set(x.channel for x in self.voiceLists['filtered'])
     
   def getCurrFilter(self):
     return self.currFilter
     
   def getCurrLSBs(self):
-    return set(x.lsb for x in self.currVoiceList)
+    return set(x.lsb for x in self.voiceLists['filtered'])
     
   def getCurrMidiOutDevPortNames(self):
-    return set(x.device.portName for x in self.currVoiceList)
+    return set(x.device.portName for x in self.voiceLists['filtered'])
     
   def getCurrMidiOutDevPortNums(self):
-    return set(x.device.portNum for x in self.currVoiceList)
+    return set(x.device.portNum for x in self.voiceLists['filtered'])
     
   def getCurrMSBs(self):
-    return set(x.msb for x in self.currVoiceList)
+    return set(x.msb for x in self.voiceLists['filtered'])
     
   def getCurrPCs(self):
-    return set(x._pc for x in self.currVoiceList)
-
-  ##
-  #  Returns the current synthesizer voice details.
-  #  @return mididevice.MIDIVoice object.
-  def getCurrVoice(self):
-    return self.currVoiceList[self.currVoiceIdx]
-
-  ##
-  #  Returns the index of the current synthesizer voice in the current voice
-  #  list.
-  #  @Return 0-based integer.
-  def getCurrVoiceIdx(self):
-    return self.currVoiceIdx
+    return set(x._pc for x in self.voiceLists['filtered'])
+    
+  def getCurrVoiceNums(self):
+    return set(x.voiceNum for x in self.voiceLists['filtered'])
   
   ##
   #  Returns the voices that are currently available from the filtered list.
-  #  @return List of MIDIVoice objects representing the current available selection.
-  def getCurrVoiceList(self):
-    return list(self.currVoiceList)
-    
-  def getCurrVoiceNums(self):
-    return set(x.voiceNum for x in self.currVoiceList)
+  #  @return SynthNav.MIDIVoiceList object.
+  def getFilteredVoiceList(self):
+    return self.voiceLists['filtered']
     
   ##
   #  Returns the currently-available MIDI output devices.
@@ -200,36 +241,27 @@ class SynthNav():
         yield v
 
   ##
-  #  Loads the voice list under the given name and sets it as the current voice
-  #  list.
-  #  @param name Name of the voice list to load.
-  #  @return "None".
-  #  @throws KeyError If the given name could not be resolved.
-  def loadVoiceList(self, name='favorites'):
-    if self.currVoiceIdx is not None:
-      currVoice = self.currVoiceList[self.currVoiceIdx]
-    else:
-      currVoice = None
-    self.currVoiceList = self.userdata[(name,)]
-    #Try to reselect the previous voice.
-    if currVoice is not None:
-      try:
-        self.currVoiceIdx = self.currVoiceList.index(currVoice)
-      except ValueError:
-        self.currVoiceIdx = None
-    else:
-      self.currVoiceIdx = None
+  #  Returns the voice list corresponding with the given name.
+  #  @param name Name of the voice list to load.  Stock names are "favorites",
+  #    "filtered", "all", and "queued" (uses "all" by default).
+  #  @return SynthNav.MIDIVoiceList object.
+  def getVoiceList(self, name='all'):
+    return self.voiceLists[name]
 
   ##
   #  Creates a new voice list using the given filter.
   #  @param filter Filter string for generating the list (see
   #    mididevice.MIDIOutDevice.iter for more information).
-  #  @param subtractive List of voices to use as the unfiltered data.  If "None", will use the
-  #    unfiltered master voice list.
+  #  @param name If not "None", will store the newly created list under the
+  #    given name.
+  #  @param voices List of voices to use as the unfiltered data.  If "None",
+  #    will use the unfiltered master voice list.
   #  @return "None".
-  def newVoiceList(self, filter='True', voices=None):
-    self.currVoiceList = list(self.iter(filter, voices))
-    self.currFilter = filter
+  def newVoiceList(self, filter='True', name=None, voices=None):
+    ret = self.MIDIVoiceList(self.iter(filter, voices))
+    if name is not None:
+      self.voiceLists[name] = ret
+    return ret
 
   ##
   #  Refreshes the internal list of available MIDI devices.
@@ -242,22 +274,16 @@ class SynthNav():
     self.newVoiceList()
 
   ##
-  #  Stores the current voice list to the given name.
+  #  Stores the given voice list to the given name.
   #  @param name Name to store the list under.
+  #  @param voices SynthNav.MIDIVoiceList object.
   #  @return "None".
-  def saveVoiceList(self, name):
-    self.userdata.set((self.currMIDIOutDev.getPortName(), name), self.currVoiceList)
-    self.userdataFile.save()
+  def saveVoiceList(self, name, voices):
+    self.voiceLists[name] = voices
 
   ##
-  #  Applies the voice at the given index of the current voice list to the
-  #  synthesizer, making it the current synthesizer voice.
-  #  @param idx 0-based integer.
-  #  @param channel 1-based integer MIDI channel to select the voice in.  If
-  #    "None", will use the device's default setting.
+  #  Applies the given voice.
+  #  @param voice src.engine.mididevice.MIDIVoice object.
   #  @return "None".
-  def selectVoice(self, idx, channel=None):
-    #We want it to throw an index error if there's a problem without messing up
-    #the state of the object, so order matters!
-    voice = self.currVoiceList[idx]
+  def selectVoice(self, voice):
     voice.pc()
