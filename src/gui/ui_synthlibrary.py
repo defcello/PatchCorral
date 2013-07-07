@@ -21,8 +21,19 @@
 #  Initializes the GUI for SynthNav.
 
 from PySide import QtGui
+from src.engine import synthnav
 
 
+
+class MainWindow(QtGui.QMainWindow):
+
+  def __init__(self):
+    super().__init__(None)
+    self.setWindowTitle('SynthNav')
+    self.setGeometry(300, 300, 800, 600)
+    s = synthnav.SynthNav()
+    s.newVoiceList('v.device.portName == "FANTOM-X" and v.channel == 1')
+    self.mainWidget = MainWidget(self, s)
 
 class MainWidget(QtGui.QWidget):
 

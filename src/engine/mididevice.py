@@ -149,6 +149,7 @@ class MIDIDevice():
         raise ValueError('Unable to find device matching name "{}" in list "{}".'.format(name, portNames))
     else:
       portCount = self.midi.getPortCount()
+      print("port={};portCount={}".format(port, portCount))
       if 0 > port > portCount:
         raise ValueError('Given port "{}" is outside the expected range (0-{}).'.format(port, portCount))
       self.portNum = port

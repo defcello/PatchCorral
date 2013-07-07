@@ -53,6 +53,7 @@ def getMIDIOutDevice(port=None, name=None, midiDevs=None):
   if midiDevs is None:
     midiDevs = mididevice.getMIDIOutDevices()
   port, name, dev = _getMIDIDevice(midiDevs, port, name)
+  print('! port={};name={};dev={}'.format(port, name, dev))
   return dev.MIDIOutDevice(port, name)
 
 ##
@@ -62,6 +63,7 @@ def getMIDIOutDevice(port=None, name=None, midiDevs=None):
 #  @param name String.  If "None", will be resolved using "port".
 #  @return 3-tuple "(port, name, src.data.synthesizers.*.mididevice module)".
 def _getMIDIDevice(midiDevs, port=None, name=None):
+  print('_getMIDIDevice called with midiDevs={};port={};name={}'.format(midiDevs,port,name))
   #The challenge is we have to resolve the TYPE of synthesizer.  The name is
   #going to be the easiest way to pull this off.
   if port is None:
@@ -233,7 +235,13 @@ class SynthNav():
   def refreshMIDIDevices(self):
     self.midiInDevs = mididevice.getMIDIInDevices()
     midiOutDevs = mididevice.getMIDIOutDevices()
-    self.midiOutDevs = list((getMIDIOutDevice(dev[0], dev[1]) for dev in midiOutDevs))
+    print('midiOutDevs={}'.format(midiOutDevs))
+    self.midiOutDevs = []
+    for dev in midiOutDevs:
+      print('2: midiOutDevs={};dev[0]={};dev[1]={}'.format(midiOutDevs, dev[0], repr(dev[1])))
+      self.midiOutDevs.append(getMIDIOutDevice(dev[0], dev[1]))
+      print('3: midiOutDevs={}'.format(midiOutDevs))
+    # self.midiOutDevs = list((getMIDIOutDevice(dev[0], dev[1]) for dev in midiOutDevs))
     self.fullVoiceList = list(itertools.chain(*(x.getVoiceList() for x in self.midiOutDevs)))
 
   ##

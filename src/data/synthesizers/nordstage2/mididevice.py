@@ -85,9 +85,9 @@ class MIDIOutDevice(mididevice.MIDIOutDevice):
     voices = []
     for name, msb, lsb, pc, group, vnn in PROGRAMS:
       voices.append(mididevice.MIDIVoice(name, self, 0, msb, lsb, pc, group, vnn))
-    super().__init__(self, id, voices, defaultChannel)
+    super().__init__(port, name, voices, defaultChannel)
     #Select the first available program.
-    self.programChange(self.voices[0])
+    # self.programChange(self.voices[0])
     # msgs = []
     # msgs.append(rtmidi.MidiMessage.controllerEvent(self._defaultChannel, 0x00, 0))
     # msgs.append(rtmidi.MidiMessage.controllerEvent(self._defaultChannel, 0x20, 3))
