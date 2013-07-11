@@ -114,10 +114,10 @@ class SynthNav():
     self.refreshMIDIDevices()
     self.voiceLists = {
       'favorites': self.MIDIVoiceList(),
-      'all': self.MIDIVoiceList(),
-      'filtered': self.MIDIVoiceList(),
-      'queued': self.MIDIVoiceList(),
     }
+    self.newVoiceList(name='all')
+    self.newVoiceList(name='filtered')
+    self.newVoiceList(name='queued')
 
   ##
   #  Class for maintaintg lists of voice objects.
@@ -160,6 +160,11 @@ class SynthNav():
     def __iter__(self):
       print('iter called')
       return iter(self.voices)
+      
+    ##
+    #  Magic method for getting the length of the list.
+    def __len__(self):
+      return len(self.voices)
       
     ##
     #  Removes the given voice from the list.
@@ -271,7 +276,6 @@ class SynthNav():
     midiOutDevs = mididevice.getMIDIOutDevices()
     self.midiOutDevs = list((getMIDIOutDevice(dev[0], dev[1]) for dev in midiOutDevs))
     self.fullVoiceList = list(itertools.chain(*(x.getVoiceList() for x in self.midiOutDevs)))
-    self.newVoiceList()
 
   ##
   #  Stores the given voice list to the given name.
