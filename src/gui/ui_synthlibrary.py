@@ -21,7 +21,7 @@
 #  Initializes the GUI for SynthNav.
 
 from PySide import QtGui, QtCore
-from src.engine import synthnav
+from src.engine import synthnav, mididevice
 
 
 
@@ -39,7 +39,7 @@ class MainWidget(QtGui.QWidget):
     #Lay it out.
     hbox_main = QtGui.QHBoxLayout(self)
     splitter_main = QtGui.QSplitter(QtCore.Qt.Orientation.Horizontal, self)
-    
+
     splitter_filtering = QtGui.QSplitter(QtCore.Qt.Orientation.Vertical, splitter_main)  #For customizing size of filtering widgets
     widget_filters = QtGui.QWidget(splitter_filtering)  #Groups filter widgets
     vbox_filters = QtGui.QVBoxLayout()  #Layout for filter widgets
@@ -48,7 +48,7 @@ class MainWidget(QtGui.QWidget):
     splitter_filtering.addWidget(widget_filters)
     splitter_filtering.addWidget(widget_voice_list)
     splitter_main.addWidget(splitter_filtering)
-    
+
     splitter_main.addWidget(widget_queued_list)
     hbox_main.addWidget(splitter_main)
 
@@ -88,7 +88,7 @@ class FilterWidget(QtGui.QWidget):
     self.lw_channel.itemSelectionChanged.connect(self.onChannelSelectionChanged)
     self.lw_category.itemSelectionChanged.connect(self.onCategorySelectionChanged)
     self.widget_filter_custom.pb_clearFilter.clicked.connect(self.onFilterClear)
-    
+
   def onFilterClear(self):
     for item in self.lw_synth.selectedItems():
       item.setSelected(False)
@@ -96,7 +96,7 @@ class FilterWidget(QtGui.QWidget):
       item.setSelected(False)
     for item in self.lw_category.selectedItems():
       item.setSelected(False)
-    
+
   def onSynthSelectionChanged(self):
     ofilter = self.synthFilter
     selectedItems = self.lw_synth.selectedItems()
@@ -108,7 +108,7 @@ class FilterWidget(QtGui.QWidget):
       ))
     self.widget_filter_custom.updateFilter(nfilter, ofilter)
     self.synthFilter = nfilter
-    
+
   def onChannelSelectionChanged(self):
     ofilter = self.channelFilter
     selectedItems = self.lw_channel.selectedItems()
@@ -120,7 +120,7 @@ class FilterWidget(QtGui.QWidget):
       ))
     self.widget_filter_custom.updateFilter(nfilter, ofilter)
     self.channelFilter = nfilter
-    
+
   def onCategorySelectionChanged(self):
     ofilter = self.categoryFilter
     selectedItems = self.lw_category.selectedItems()
@@ -145,7 +145,7 @@ class CustomFilterWidget(QtGui.QWidget):
     #Lay it out.
     vbox = QtGui.QVBoxLayout(self)
     vbox.addWidget(QtGui.QLabel(
-      'Params: {}'.format(','.join('v.{}'.format(key) for key in self.synthNav.getVoiceList()[0].keys())),
+      'Params: {}'.format(','.join('v.{}'.format(key) for key in self.synthNav.getVoiceList('all')[0].keys())),
       self,
     ))
     hbox = QtGui.QHBoxLayout()
@@ -157,14 +157,14 @@ class CustomFilterWidget(QtGui.QWidget):
     self.synthNav.filterChanged.connect(self.le_filter.setText)
     self.pb_applyFilter.clicked.connect(self.onApplyButtonPressed)
     self.pb_clearFilter.clicked.connect(self.onClearButtonPressed)
-   
+
   ##
   #  Callback for when the "Apply" button is pressed.
   #  @post Current filter will be applied to the engine.
   #  @return "None".
   def onApplyButtonPressed(self):
     self.synthNav.filter(self.le_filter.text())
-    
+
   ##
   #  Callback for when the "Clear" button is pressed.
   #  @post Current filter will be replaced with "True" and will be applied to
@@ -172,7 +172,7 @@ class CustomFilterWidget(QtGui.QWidget):
   #  @return "None".
   def onClearButtonPressed(self):
     self.synthNav.filter('True')
-  
+
   ##
   #  Updates the custom filter.
   #  @param n New filter string.  If "None", will use an empty string.
@@ -190,58 +190,63 @@ class CustomFilterWidget(QtGui.QWidget):
         n = ''
       self.synthNav.filter(currFilter.replace(o, n).strip())
 
-class FilteredVoiceListWidget(QtGui.QWidget):
+class VoiceListWidget(QtGui.QWidget):
 
   def __init__(self, parent, synthNav):
     super().__init__(parent)
     self.synthNav = synthNav
-    self.voices = self.synthNav.getFilteredVoiceList()
-    self.cols = list(self.voices[0].keys())
+    assert hasattr(self, 'voices'), '"self.voices" needs to be populated by the subclass.'
+    if len(self.voices) == 0:
+      self.cols = mididevice.MIDIVoice.tags
+    else:
+      self.cols = list(self.voices[0].keys())
     self.numCols = len(self.cols)
     #Create widgets.
     self.tw_currVoices = QtGui.QTableWidget(0, self.numCols, self)
     self.tw_currVoices.setHorizontalHeaderLabels(self.cols)
     self.refreshCurrVoices()
     #Lay it out.
-    vbox = QtGui.QVBoxLayout(self)
-    vbox.addWidget(self.tw_currVoices)
+    self.vbox = QtGui.QVBoxLayout(self)
+    self.vbox.addWidget(self.tw_currVoices)
     #Connect signals.
-    self.synthNav.filterChanged.connect(self.refreshCurrVoices)
+    self.voices.listModified.connect(self.refreshCurrVoices)
 
   def refreshCurrVoices(self):
     print("refreshCurrVoices called")
-    self.voices = self.synthNav.getFilteredVoiceList()
     self.tw_currVoices.clearContents()
     self.tw_currVoices.setRowCount(len(self.voices))
     for row, voice in enumerate(self.voices):
       for col, attr in enumerate(self.cols):
-        self.tw_currVoices.setItem(row, col, QtGui.QTableWidgetItem(str(voice[attr])))
+        item = QtGui.QTableWidgetItem(str(voice[attr]))
+        item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+        item.voice = voice
+        self.tw_currVoices.setItem(row, col, item)
 
-class QueuedVoiceListWidget(QtGui.QWidget):
+class FilteredVoiceListWidget(VoiceListWidget):
 
   def __init__(self, parent, synthNav):
-    super().__init__(parent)
-    self.synthNav = synthNav
-    self.voices = self.synthNav.getFilteredVoiceList()
-    self.cols = list(self.voices[0].keys())
-    self.numCols = len(self.cols)
-    #Create widgets.
-    self.tw_currVoices = QtGui.QTableWidget(0, self.numCols, self)
-    self.tw_currVoices.setHorizontalHeaderLabels(self.cols)
-    self.refreshCurrVoices()
-    #Lay it out.
-    vbox = QtGui.QVBoxLayout(self)
-    vbox.addWidget(self.tw_currVoices)
-    #Connect signals.
-    # self.synthNav.filterChanged.connect(self.refreshCurrVoices)
+    self.voices = synthNav.getFilteredVoiceList()
+    super().__init__(parent, synthNav)
+    self.tw_currVoices.itemDoubleClicked.connect(self.onItemDoubleClicked)
 
-  def refreshCurrVoices(self):
-    self.voices = self.synthNav.getVoiceList('queued')
-    self.tw_currVoices.clearContents()
-    self.tw_currVoices.setRowCount(len(self.voices))
-    for row, voice in enumerate(self.voices):
-      for col, attr in enumerate(self.cols):
-        self.tw_currVoices.setItem(row, col, QtGui.QTableWidgetItem(str(voice[attr])))
+  def onItemDoubleClicked(self, item):
+    self.synthNav.getVoiceList('queued').add(item.voice)
+
+class QueuedVoiceListWidget(VoiceListWidget):
+
+  def __init__(self, parent, synthNav):
+    self.voices = synthNav.getVoiceList('queued')
+    super().__init__(parent, synthNav)
+    self.pb_clearQueue = QtGui.QPushButton("Clear")
+    self.vbox.addWidget(self.pb_clearQueue)
+    self.pb_clearQueue.pressed.connect(self.onClearButtonPressed)
+    self.tw_currVoices.itemDoubleClicked.connect(self.onItemDoubleClicked)
+
+  def onClearButtonPressed(self):
+    self.voices.clear()
+
+  def onItemDoubleClicked(self, item):
+    item.voice.pc()
 
 
 

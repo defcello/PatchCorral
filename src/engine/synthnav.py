@@ -121,17 +121,20 @@ class SynthNav(QtCore.QObject):
     }
     self.newVoiceList(name='all')
     self.newVoiceList(name='filtered')
-    self.newVoiceList(name='queued')
+    self.newVoiceList('False', 'queued', [])
 
   ##
   #  Class for maintaintg lists of voice objects.
-  class MIDIVoiceList:
+  class MIDIVoiceList(QtCore.QObject):
+  
+    listModified = QtCore.Signal()
     
     ##
     #  Class constructor.
     #  @param voices List of src.engine.mididevice.MIDIVoice objects.
     #  @return "None".
     def __init__(self, voices=None):
+      super().__init__()
       if voices is None:
         voices = []
       self.voicelist = set(voices)
@@ -142,6 +145,7 @@ class SynthNav(QtCore.QObject):
     #  @return "None".
     def add(self, voice):
       self.voicelist.add(voice)
+      self.listModified.emit()
       
     ##
     #  Add the given voices to the list.
@@ -149,6 +153,14 @@ class SynthNav(QtCore.QObject):
     #  @return "None".
     def adds(self, voices):
       self.voicelist |= set(voices)
+      self.listModified.emit()
+      
+    ##
+    #  Removes all voices from the list.
+    #  @return "None".
+    def clear(self):
+      self.voicelist = set()
+      self.listModified.emit()
       
     ##
     #  Enables users to reference a particular voice in the list.
@@ -185,6 +197,7 @@ class SynthNav(QtCore.QObject):
     #  @return "None".
     def remove(self, voice):
       self.voicelist.remove(voice)
+      self.listModified.emit()
     
     ##
     #  Manipulates the internal voice list.
@@ -194,6 +207,7 @@ class SynthNav(QtCore.QObject):
     def voices(self, voices=None):
       if voices is not None:
         self.voicelist = set(voices)
+        self.listModified.emit()
       return list(self.voicelist)
 
   ##
@@ -244,6 +258,14 @@ class SynthNav(QtCore.QObject):
     return self.midiOutDevs
 
   ##
+  #  Returns the voice list corresponding with the given name.
+  #  @param name Name of the voice list to load.  Stock names are "favorites",
+  #    "filtered", "all", and "queued" (uses "all" by default).
+  #  @return SynthNav.MIDIVoiceList object.
+  def getVoiceList(self, name='all'):
+    return self.voiceLists[name]
+
+  ##
   #  Returns an iterator that steps over the voices.  Supports filtering.
   #  @param filter Python statement that can be evaluated such that "v" stands for a MIDIVoice
   #    object.
@@ -258,14 +280,6 @@ class SynthNav(QtCore.QObject):
     for v in self.fullVoiceList:
       if eval(filter):
         yield v
-
-  ##
-  #  Returns the voice list corresponding with the given name.
-  #  @param name Name of the voice list to load.  Stock names are "favorites",
-  #    "filtered", "all", and "queued" (uses "all" by default).
-  #  @return SynthNav.MIDIVoiceList object.
-  def getVoiceList(self, name='all'):
-    return self.voiceLists[name]
 
   ##
   #  Creates a new voice list using the given filter.

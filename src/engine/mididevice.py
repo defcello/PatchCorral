@@ -48,6 +48,18 @@ def getMIDIOutDevices():
 #  Class representing a specific MIDI voice.
 class MIDIVoice():
 
+  tags = [
+    'name',
+    'msb',
+    'lsb',
+    '_pc',
+    'device.portNum',
+    'device.portName',
+    'channel',
+    'category',
+    'voiceNum',
+  ]
+
   ##
   #  Class constructor.
   #  @param name String
@@ -79,15 +91,7 @@ class MIDIVoice():
     return v
 
   def __iter__(self):
-    yield 'name'
-    yield 'msb'
-    yield 'lsb'
-    yield '_pc'
-    yield 'device.portNum'
-    yield 'device.portName'
-    yield 'channel'
-    yield 'category'
-    yield 'voiceNum'
+    return (tag for tag in self.tags)
 
   def items(self):
     for key in iter(self):
