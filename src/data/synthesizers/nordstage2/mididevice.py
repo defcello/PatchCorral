@@ -38,7 +38,6 @@ class MIDIInDevice(mididevice.MIDIInDevice):
   def __init__(self, id='Nord Stage 2 MIDI'):
     mididevice.MIDIInDevice.__init__(self, id)
 
-
 class MIDIOutDevice(mididevice.MIDIOutDevice):
 
   ## Call Control values for various operations.

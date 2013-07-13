@@ -20,11 +20,14 @@
 from src.data.synthesizers.nordstage2 import mididevice as nordstage2
 from src.data.synthesizers.rolandfantomxr import mididevice as rolandfantomxr
 from src.data.synthesizers.generalmidi import mididevice as generalmidi
+from src.engine import mididevice
 
 
 
 SYNTHESIZERS = {
   nordstage2.MIDIOutDevice.ID: nordstage2,
   rolandfantomxr.MIDIOutDevice.ID: rolandfantomxr,
+  'Delta 1010LT MIDI': mididevice,
+  'Scarlett 18i20 USB': mididevice,
   'default': generalmidi,
 }

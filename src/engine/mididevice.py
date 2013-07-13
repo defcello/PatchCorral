@@ -248,9 +248,11 @@ class MIDIOutDevice(MIDIDevice):
   #  @param name String name of the MIDI device.  If "None", will use this class's ID string.
   #  @param voices List of MIDIVoice objects available from this MIDI Device.
   #  @param defaultChannel If given, will use this channel by default for all outgoing commands.
-  def __init__(self, port, name, voices, defaultChannel=None):
+  def __init__(self, port, name=None, voices=None, defaultChannel=None):
     if name is None:
       name = MIDIOutDevice.ID
+    if voices is None:
+      voices = []
     self.midi = rtmidi.RtMidiOut()
     super().__init__(port, name)
     self.voices = voices

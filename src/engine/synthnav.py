@@ -24,6 +24,7 @@ from . import addressabletree
 from . import yamlfile
 from . import mididevice
 from src.data import synthesizers
+from PySide import QtCore
 import re
 import itertools
 
@@ -95,12 +96,15 @@ def _getMIDIDevice(midiDevs, port=None, name=None):
 #  Class for navigating voices within a single synthesizer.  Supports generation
 #  of filtered lists of its voices, saving those filtered lists to file, and a
 #  favorites list of voices.
-class SynthNav():
+class SynthNav(QtCore.QObject):
+
+  filterChanged = QtCore.Signal(str)
 
   ##
   #  Class initializer.
   #  @return "None".
   def __init__(self):
+    super().__init__()
     self.userdataFile = yamlfile.File('userdata.yaml')
     self.userdata = self.userdataFile.getRoot()  #Note that any modifications to this will modify
                                                  #the internal structure of "userdataFile".
@@ -130,28 +134,28 @@ class SynthNav():
     def __init__(self, voices=None):
       if voices is None:
         voices = []
-      self.voices = set(voices)
+      self.voicelist = set(voices)
       
     ##
     #  Add the given voice to the list.
     #  @param voice src.engine.mididevice.MIDIVoice object.
     #  @return "None".
     def add(self, voice):
-      self.voices.add(voice)
+      self.voicelist.add(voice)
       
     ##
     #  Add the given voices to the list.
     #  @param voices List of src.engine.mididevice.MIDIVoice objects.
     #  @return "None".
     def adds(self, voices):
-      self.voices |= set(voices)
+      self.voicelist |= set(voices)
       
     ##
     #  Enables users to reference a particular voice in the list.
     #  @param key Integer index.
     def __getitem__(self, key):
       print('getitem called with key {}'.format(key))
-      return list(self.voices)[key]
+      return list(self.voicelist)[key]
       
     ##
     #  Iterates over the voice list.  This is what gets called by
@@ -159,28 +163,38 @@ class SynthNav():
     #  @return Iterator object.
     def __iter__(self):
       print('iter called')
-      return iter(self.voices)
-      
-    ##
-    #  Magic method for getting the length of the list.
-    def __len__(self):
-      return len(self.voices)
-      
-    ##
-    #  Removes the given voice from the list.
-    #  @param voice src.engine.mididevice.MIDIVoice object.
-    #  @return "None".
-    def remove(self, voice):
-      self.voices.remove(voice)
+      return iter(self.voicelist)
       
     ##
     #  Returns an iterator that, as it is iterated, will apply the current voice
     #  by calling it's "pc" method.
     #  @return Iterator object.
     def iterPC(self):
-      for voice in self.voices:
+      for voice in self.voicelist:
         voice.pc()
         yield voice
+      
+    ##
+    #  Magic method for getting the length of the list.
+    def __len__(self):
+      return len(self.voicelist)
+      
+    ##
+    #  Removes the given voice from the list.
+    #  @param voice src.engine.mididevice.MIDIVoice object.
+    #  @return "None".
+    def remove(self, voice):
+      self.voicelist.remove(voice)
+    
+    ##
+    #  Manipulates the internal voice list.
+    #  @param voices List of mididevice.MIDIVoice objects.  If "None", nothing
+    #    will be done.
+    #  @return New/current list of mididevice.MIDIVoice objects.
+    def voices(self, voices=None):
+      if voices is not None:
+        self.voicelist = set(voices)
+      return list(self.voicelist)
 
   ##
   #  Adds the given voice to the "favorites" list.
@@ -258,14 +272,24 @@ class SynthNav():
   #  @param filter Filter string for generating the list (see
   #    mididevice.MIDIOutDevice.iter for more information).
   #  @param name If not "None", will store the newly created list under the
-  #    given name.
+  #    given name.  If the name is already being use by another list, this
+  #    method will populate that existing list with the new voices.
   #  @param voices List of voices to use as the unfiltered data.  If "None",
   #    will use the unfiltered master voice list.
   #  @return "None".
   def newVoiceList(self, filter='True', name=None, voices=None):
-    ret = self.MIDIVoiceList(self.iter(filter, voices))
-    if name is not None:
-      self.voiceLists[name] = ret
+    try:
+      ret = self.voiceLists[name]
+    except KeyError:
+      ret = self.MIDIVoiceList(self.iter(filter, voices))
+      if name is not None:
+        assert isinstance(ret, self.MIDIVoiceList)
+        self.voiceLists[name] = ret
+    else:
+      ret.voices(self.iter(filter, voices))
+    if name == 'filtered':  #Do this at the end so listeners get the updated voice list as well.
+      self.currFilter = filter
+      self.filterChanged.emit(filter)
     return ret
 
   ##
@@ -283,6 +307,7 @@ class SynthNav():
   #  @param voices SynthNav.MIDIVoiceList object.
   #  @return "None".
   def saveVoiceList(self, name, voices):
+    assert isinstance(voices, self.MIDIVoiceList)
     self.voiceLists[name] = voices
 
   ##
@@ -291,3 +316,16 @@ class SynthNav():
   #  @return "None".
   def selectVoice(self, voice):
     voice.pc()
+    
+  ##
+  #  Manipulates the filter being used by the "filtered" voice list.
+  #  @param filter String with a Python expression.  See "SynthNav.newVoiceList"
+  #    for more information.  If "None", nothing will change.
+  #  @param voices List of voices to use as the unfiltered data.  If "None",
+  #    will use the unfiltered master voice list.
+  #  @return New filter string (or current if "filter" is "None").
+  #  @post "filtered" voice list will be repopulated.
+  def filter(self, filter=None, voices=None):
+    if filter is not None:
+      self.newVoiceList(filter, 'filtered', voices)
+    return self.currFilter
