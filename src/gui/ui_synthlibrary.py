@@ -192,6 +192,14 @@ class CustomFilterWidget(QtGui.QWidget):
 
 class VoiceListWidget(QtGui.QWidget):
 
+  class TableWidget(QtGui.QTableWidget):
+    
+    keyPressed = QtCore.Signal(QtGui.QKeyEvent)
+    
+    def keyPressEvent(self, event):
+      super().keyPressEvent(event)
+      self.keyPressed.emit(event)
+
   def __init__(self, parent, synthNav):
     super().__init__(parent)
     self.synthNav = synthNav
@@ -202,7 +210,7 @@ class VoiceListWidget(QtGui.QWidget):
       self.cols = list(self.voices[0].keys())
     self.numCols = len(self.cols)
     #Create widgets.
-    self.tw_currVoices = QtGui.QTableWidget(0, self.numCols, self)
+    self.tw_currVoices = self.TableWidget(0, self.numCols, self)
     self.tw_currVoices.setHorizontalHeaderLabels(self.cols)
     self.refreshCurrVoices()
     #Lay it out.
@@ -210,6 +218,10 @@ class VoiceListWidget(QtGui.QWidget):
     self.vbox.addWidget(self.tw_currVoices)
     #Connect signals.
     self.voices.listModified.connect(self.refreshCurrVoices)
+    self.tw_currVoices.keyPressed.connect(self.onKeypressEvent)
+    
+  def onKeypressEvent(self, event):
+    pass
 
   def refreshCurrVoices(self):
     print("refreshCurrVoices called")
@@ -231,6 +243,10 @@ class FilteredVoiceListWidget(VoiceListWidget):
 
   def onItemDoubleClicked(self, item):
     self.synthNav.getVoiceList('queued').add(item.voice)
+    
+  def onKeypressEvent(self, event):
+    if event.key() in [QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return]:
+      self.synthNav.getVoiceList('queued').adds(item.voice for item in self.tw_currVoices.selectedItems())
 
 class QueuedVoiceListWidget(VoiceListWidget):
 
@@ -247,6 +263,19 @@ class QueuedVoiceListWidget(VoiceListWidget):
 
   def onItemDoubleClicked(self, item):
     item.voice.pc()
+    
+  def onKeypressEvent(self, event):
+    if event.key() in [QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return]:
+      items = self.tw_currVoices.selectedItems()
+      try:
+        item = items[0]
+      except IndexError:
+        pass
+      else:
+        item.voice.pc()
+    elif event.key() in [QtCore.Qt.Key_Delete]:
+      items = self.tw_currVoices.selectedItems()
+      self.voices.remove(*(item.voice for item in items))
 
 
 

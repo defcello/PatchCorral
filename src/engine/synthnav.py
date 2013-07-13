@@ -193,10 +193,11 @@ class SynthNav(QtCore.QObject):
       
     ##
     #  Removes the given voice from the list.
-    #  @param voice src.engine.mididevice.MIDIVoice object.
+    #  @param voices Any number of src.engine.mididevice.MIDIVoice objects.
     #  @return "None".
-    def remove(self, voice):
-      self.voicelist.remove(voice)
+    def remove(self, *voices):
+      for voice in voices:
+        self.voicelist.remove(voice)
       self.listModified.emit()
     
     ##
