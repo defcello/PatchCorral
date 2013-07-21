@@ -32,6 +32,8 @@ import re
 #  Represents an SFZ file, simplying procedures such as loading and saving.
 #  @note For details on the SFZ format, see
 #    "http://www.cakewalk.com/DevXchange/article.aspx?aid=108".
+#  @note Comments are not currently handled by this interface (well, they work,
+#    but not the way you would expect them to).
 class File(file.File):
 
   def __init__(self, filename=None):
