@@ -86,9 +86,9 @@ class File(file.File):
     self.clear()
     s = ''
     with open(filename, 'r') as fd:
-      s = fd.readall()
-    s.split('<group>')
-    for g in s:
+      s = fd.read()
+    s = s.split('<group>')
+    for g in s[1:]:
       group = Group()
       group.load(g)
       self.groups.append(group)
@@ -146,6 +146,8 @@ class Region:
     'sw_last': None,  #For key switching; region will only play if the last received MIDI note number matches this value.
     'trigger': None,  #Sets the trigger for playing the sample ("attack"(default), "release", "first", "legato")
   }
+  
+  __slots__ = ['attrs']
 
   ##
   #  Class constructor.
@@ -155,9 +157,8 @@ class Region:
   #  @param kargs Any number of keyword arguments with "key" being the attribute
   #    to set and "value" being the value to set the attribute to.
   def __init__(self, **kargs):
-    for k, v in kargs.items():
-      setattr(self, k, v)
     self.attrs = dict(self.defaults)
+    self.attrs.update(kargs)
 
   ##
   #  Clears all set attributes and regions.
@@ -165,6 +166,8 @@ class Region:
     self.attrs = dict(self.defaults)
 
   def __getattr__(self, attr):
+    if attr in type(self).__slots__:
+      return super().__getattr__(attr)
     if not isinstance(attr, str):
       raise ValueError('Given attr "{}" is of type "{}"; expected "{}".'.format(
         attr,
@@ -179,6 +182,8 @@ class Region:
     self.clear()
     r = re.compile(r'^(\S+)=(.*)$')
     for s in string.split('\n'):
+      if s == '':
+        continue
       m = r.match(s)
       if m is None:
         raise ValueError('Unable to parse "{}" in string "{}".'.format(s, string))
@@ -195,10 +200,14 @@ class Region:
   def save(self):
     ret = '<region>\n'
     for k, v in self.attrs:
+      if v is None:
+        continue
       ret += '{}={}\n'.format(k, v)
     return ret
 
   def __setattr__(self, attr, value):
+    if attr in type(self).__slots__:
+      return super().__setattr__(attr, value)
     if not isinstance(attr, str):
       raise ValueError('Given attr "{}" is of type "{}"; expected "{}".'.format(
         attr,
@@ -214,6 +223,8 @@ class Region:
 #  @note For a list of all opcodes and what they do, see
 #    "http://www.cakewalk.com/DevXchange/article.aspx?aid=108".
 class Group(Region):
+  
+  __slots__ = ['attrs', 'regions']
 
   ##
   #  Class constructor.
@@ -278,7 +289,7 @@ class Group(Region):
   ##
   #  Loads the given string into this object.  All current data will be cleared.
   def load(self, string):
-    s.split('<region>')
+    s = string.split('<region>')
     super().load(s[0])
     for r in s[1:]:
       region = Region()
