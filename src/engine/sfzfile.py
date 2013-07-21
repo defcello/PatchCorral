@@ -157,6 +157,11 @@ class Region:
       setattr(self, k, v)
     self.attrs = dict(self.defaults)
 
+  ##
+  #  Clears all set attributes and regions.
+  def clear(self):
+    self.attrs = dict(self.defaults)
+
   def __getattr__(self, attr):
     if not isinstance(attr, str):
       raise ValueError('Given attr "{}" is of type "{}"; expected "{}".'.format(
