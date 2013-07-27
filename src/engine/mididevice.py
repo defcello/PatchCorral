@@ -22,7 +22,6 @@
 #  @date 03/08/2013 Created file.  -jc
 #  @author John Crawford
 
-from patchcorral.src.data import synthesizers
 from PySide import QtCore
 import re  #For user-defined iteration filters.
 import rtmidi
@@ -33,72 +32,11 @@ import yaml
 
 
 ##
-#  Resolves the given information to a MIDI device.
-#  @param midiDevs List of 2-tuples "(port number, device name)".
-#  @param port Integer.  If "None", will be resolved using "name".
-#  @param name String.  If "None", will be resolved using "port".
-#  @return 3-tuple "(port, name, src.data.synthesizers.*.mididevice module)".
-def _getMIDIDevice(midiDevs, port=None, name=None):
-  #The challenge is we have to resolve the TYPE of synthesizer.  The name is
-  #going to be the easiest way to pull this off.
-  if port is None:
-    if name is None:
-      raise ValueError('Must provide at least the "name" or "port" to identify a MIDI device.')
-    for dev in midiDevs:
-      if dev[1] == name:
-        port = dev[0]
-        break
-    else:
-      raise ValueError('Unable to find device matching name "{}" in list "{}".'.format(name, midiDevs))
-  if name is None:
-    for dev in midiDevs:
-      if dev[0] == port:
-        name = dev[1]
-        break
-    else:
-      raise ValueError('Unable to find device matching port "{}" in list "{}".'.format(port, midiDevs))
-  #Strip out the core ID.
-  m = re.match(r'(?:\d- )?(.*)', name)
-  if m is None:
-    raise ValueError('Unable to parse synthesizer ID from name "{}".'.format(name))
-  id = m.group(1)
-  #Match the ID to a mididevice and return.
-  try:
-    return port, name, synthesizers.SYNTHESIZERS[id]
-  except KeyError:
-    return port, name, synthesizers.SYNTHESIZERS['default']
-
-##
-#  Resolves a given port OR name to a MIDI Input device.
-#  @param port Integer.  If "None", will be resolved using "name".
-#  @param name String.  If "None", will be resolved using "port".
-#  @param midiDevs List of 2-tuples "(port number, device name)".  If "None",
-#    will be resolved using a fresh device query.
-#  @return engine.mididevice.MIDIInDevice object.
-def getMIDIInDevice(port=None, name=None, midiDevs=None):
-  if midiDevs is None:
-    midiDevs = getMIDIInDevices()
-  port, name, dev = _getMIDIDevice(midiDevs, port, name)
-  return dev.MIDIInDevice(port)
-##
 #  Returns a list of the available MIDI Input Devices.
 #  @return List of tuples "(portNum, portName)".
 def getMIDIInDevices():
     midi = rtmidi.RtMidiIn()
     return list((port, midi.getPortName(port)) for port in range(midi.getPortCount()))
-
-##
-#  Resolves a given port OR name to a MIDI Output device.
-#  @param port Integer.  If "None", will be resolved using "name".
-#  @param name String.  If "None", will be resolved using "port".
-#  @param midiDevs List of 2-tuples "(port number, device name)".  If "None",
-#    will be resolved using a fresh device query.
-#  @return engine.mididevice.MIDIOutDevice object.
-def getMIDIOutDevice(port=None, name=None, midiDevs=None):
-  if midiDevs is None:
-    midiDevs = getMIDIOutDevices()
-  port, name, dev = _getMIDIDevice(midiDevs, port, name)
-  return dev.MIDIOutDevice(port, name)
 
 ##
 #  Returns a list of the available MIDI Output Devices.
@@ -204,6 +142,9 @@ class MIDIVoice():
 #  an rtmidi object.
 class MIDIDevice(QtCore.QObject):
 
+  ## Signals when a MIDI message has been sent or recieved.
+  midiEvent = QtCore.Signal(object)
+
   ##
   #  Class initializer.
   #  @param id Identifier for the device interface.  Can be an integer (index) or a string (name).
@@ -243,16 +184,16 @@ class MIDIDevice(QtCore.QObject):
 #  Class representing a MIDI Input Device.
 class MIDIInDevice(MIDIDevice):
 
-  eventReceived = QtCore.Signal(object)
-
   ##
   #  Class initializer.
   #  @param id Identifier for the device input and output interfaces.  Can be an integer (index) or
   #    a string (name).
-  def __init__(self, id):
+  def __init__(self, port, name=None):
+    if name is None:
+      name = MIDIInDevice.ID
     self.midi = rtmidi.RtMidiIn()
     self.midi.setCallback(self.onMIDIMsg)
-    super().__init__(id)
+    super().__init__(port, name)
     self.midiOutDevice = None
     self.midiOutChannel = None
     self.forwardingLock = threading.Lock()
@@ -276,8 +217,8 @@ class MIDIInDevice(MIDIDevice):
       self.midiOutChannel = channel
 
   def onMIDIMsg(self, data):
-    print 'id(self): onMIDIMsg: Recieved data "{0}".'.format(data)
-    self.eventReceived.emit(data)
+    # print('{}: onMIDIMsg: Recieved data "{}".'.format(id(self), data))
+    self.midiEvent.emit(data)
     if self.midiOutDevice is not None:
       with self.forwardingLock:
         if self.midiOutChannel is not None:
@@ -397,6 +338,7 @@ class MIDIOutDevice(MIDIDevice):
   def sendMessage(self, msg):
     with self.sendLock:
       self.midi.sendMessage(msg)
+    self.midiEvent.emit(msg)
 
   ##
   #  Sends the given messages to the MIDI device.

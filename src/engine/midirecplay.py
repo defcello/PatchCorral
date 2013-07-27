@@ -21,6 +21,8 @@ from . import mididevice
 from . import synthnav
 from PySide import QtCore
 import time
+import threading
+import traceback
 
 
 
@@ -51,6 +53,7 @@ class MIDIRecPlay(QtCore.QObject):
     self.isRecording = False
     self.isPlaying = False
     self.player = MIDIPlay()
+    self.midiOutDevice = None
 
   ##
   #  Opens the given MIDI input port for recording.
@@ -70,17 +73,26 @@ class MIDIRecPlay(QtCore.QObject):
     self.midi = module.MIDIInDevice(name)
     self.port = port
     self.name = name
-    self.midi.eventReceived.connect(self._onEventReceived)
-    self.midiOutDevice = None
+    self.midi.midiEvent.connect(self._onEventReceived)
 
   def close(self):
     assert self.midi is not None, "No MIDI Device available to close!"
     self.midi.closePort()
-    self.midi.eventReceived.disconnect(self._onEventReceived)
+    self.midi.midiEvent.disconnect(self._onEventReceived)
     self.midi = None
+    
+  def setMIDIInDevice(self, midi):
+    if self.midi is not None:
+      self.close()
+    self.midi = midi
+    self.port = midi.portNum
+    self.name = midi.portName
+    self.midi.midiEvent.connect(self._onEventReceived)
 
   def startRecording(self):
     if not self.isPlaying:
+      self.startTime = None
+      self.recording = []
       self.isRecording = True
     else:
       raise Exception('Cannot record while playing back!')
@@ -95,16 +107,18 @@ class MIDIRecPlay(QtCore.QObject):
         self.startTime = time.time()
       self.recording.append( (time.time() - self.startTime, data) )
 
-  def startPlaying(self, midiOutDevice=None):
+  def startPlaying(self, midiOutDevice=None, loop=False):
     if midiOutDevice is not None:
       self.midiOutDevice = midiOutDevice
     if not self.isRecording:
       self.isPlaying = True
     else:
       raise Exception('Cannot play back while recording!')
+    self.player.loopPlayback(loop)
+    self.player.play(self.recording, self.midiOutDevice)
 
   def stopPlaying(self):
-    self.isPlaying = False
+    self.player.stop()
 
 ##
 #  Plays a given list of 2-tuples "(delay in seconds, MIDI event)".
@@ -119,10 +133,13 @@ class MIDIPlay(QtCore.QObject):
   #  @param recording List of 2-tuples "(delay in seconds, MIDI event)".
   #  @param midiOutDevice patchcorral.src.engine.mididevice.MIDIOutDevice object.
   def __init__(self, recording=None, midiOutDevice=None):
+    super().__init__()
     self.recording = recording
     self.midiOutDevice = midiOutDevice
     self.playbackThread = None
     self._keepPlaying = False
+    self.startTime = None
+    self.loopMode = False
     
   ##
   #  Indicates if playback is active.
@@ -137,7 +154,7 @@ class MIDIPlay(QtCore.QObject):
   #  @param midiOutDevice patchcorral.src.engine.mididevice.MIDIOutDevice object.
   #    If "None", will use the previously-used.
   #  @return "None".
-  def start(self, recording=None, midiOutDevice=None):
+  def play(self, recording=None, midiOutDevice=None):
     if self.playbackThread is not None:
       raise Exception('Playback is already active.')
     if recording is None:
@@ -160,24 +177,41 @@ class MIDIPlay(QtCore.QObject):
     self.playbackStarted.emit()
     try:
       assert self.startTime is None, "Playback already running!"
-      self.startTime = time.time()
-      for playTime, data in self.recording:
-        while self._keepPlaying:
-          #Wait for the right time to trigger the event.
-          currDur = time.time() - self.startTime
-          sleepDur = currDur - playTime
-          if sleepDur > 0:
-            if sleepDur > 0.3:
-              time.sleep(0.3)
-            else:
-              time.sleep(sleepDur)
-        if self.midiOutDevice is not None:
-          self.midiOutDevice.sendMessage(data)
-        self.playbackEvent.emit(data)
+      while self.loopMode and self._keepPlaying:
+        self.startTime = time.time()
+        for playTime, data in self.recording:
+          while self._keepPlaying:
+            #Wait for the right time to trigger the event.
+            currDur = time.time() - self.startTime
+            sleepDur = playTime - currDur
+            if sleepDur > 0:
+              if sleepDur > 0.3:
+                time.sleep(0.3)
+              else:
+                time.sleep(sleepDur)
+            break
+          if self.midiOutDevice is not None:
+            self.midiOutDevice.sendMessage(data)
+          self.playbackEvent.emit(data)
+    except:
+      traceback.print_exc()
     finally:
-      self.playbackStopped.emit()
       self.playbackThread = None
+      self.startTime = None
       self.stop()
+      self.playbackStopped.emit()
+      
+  ##
+  #  Gets/sets the looping playback setting.
+  #  @param val If "True", playback will loop indefinitely.  If "False",
+  #    playback will stop after one iteration.  If "None", the value will go
+  #    unchanged.
+  #  @return "True" if playback is set to loop indefinitely; "False" if playback
+  #    is set to stop after one iteration.
+  def loopPlayback(self, val=None):
+    if val is not None:
+      self.loopMode = val
+    return self.loopMode
 
   ##
   #  Stops playback of the MIDI sequence.  Note that this may take at least 0.3

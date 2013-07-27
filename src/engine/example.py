@@ -24,16 +24,34 @@
 #  @date 3/12/2013 Created file.  -jc
 
 import os
-os.chdir(r'X:\2013.03.07 - Python Web Server with MIDI Controller\synthesizers')
-from roland_fantom.RolandFantomXR import MIDIOutDevice
-m = MIDIOutDevice(1)
+os.chdir(r'X:\PatchCorral')
+from patchcorral.src.engine import mididevice
+from patchcorral.src.engine import midirecplay
+from patchcorral.src.data import synthesizers
+import sys
+import threading
+from PySide import QtGui
+import time
+
+app = QtGui.QApplication(sys.argv)
+roland = synthesizers.getMIDIOutDevice(name='FANTOM-X')
+nord = synthesizers.getMIDIInDevice(name='Nord Stage 2 MIDI')
+from patchcorral.src.engine import midirecplay
+rp = midirecplay.MIDIRecPlay()
+rp.setMIDIInDevice(nord)
+rp.startRecording()
+
+def evalThread():
+  import pdb
+  pdb.set_trace()
+
+t = threading.Thread(target=evalThread)
+t.start()
+  
+app.exec_()
 
 
-i = m.iter("'SOFT PAD' == v.category")
-v = m.programChange(i.next())
+#######################
 
-
-m.playNote(1, 'C3', 100)
-m.playNote(1, 'E3', 100)
-m.playNote(1, 'G3', 100)
-m.playNote(1, 'C4', 100)
+rp.stopRecording()
+rp.startPlaying(roland, True)

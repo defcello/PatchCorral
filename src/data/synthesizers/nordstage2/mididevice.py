@@ -33,10 +33,10 @@ PROGRAMS = [
 
 class MIDIInDevice(mididevice.MIDIInDevice):
 
-  ##
-  #  @param defaultChannel If given, will use this channel by default for all outgoing commands.
-  def __init__(self, id='Nord Stage 2 MIDI'):
-    mididevice.MIDIInDevice.__init__(self, id)
+  ID = 'Nord Stage 2 MIDI'
+
+  def __init__(self, port, name=None):
+    mididevice.MIDIInDevice.__init__(self, port, name)
 
 class MIDIOutDevice(mididevice.MIDIOutDevice):
 
