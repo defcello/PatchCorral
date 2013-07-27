@@ -23,7 +23,7 @@
 #  @author John Crawford
 
 from . import UserVoices, PRA, PRB, PRC, PRD, PRE, PRF, PRG, PRH, GM, SRX04, SRX05, SRX06, SRX07, SRX09
-from src.engine import mididevice
+from patchcorral.src.engine import mididevice
 import itertools
 
 

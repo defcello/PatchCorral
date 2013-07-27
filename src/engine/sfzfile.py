@@ -92,13 +92,29 @@ class File(file.File):
       group = Group()
       group.load(g)
       self.groups.append(group)
+      
+  ##
+  #  Looks for samples in the given directory matching the given name prefix.
+  #  It will then attempt to construct itself into a proper SFZ using the given
+  #  files.
+  def loadFromSamples(self, dir, prefix):
+    r = re.compile(r'^{}(\d*)\D+(\d+)\.[^\.]*$'.format(prefix))
+    files = []
+    for f in os.listdir(dir):
+      m = r.match(f)
+      if m is not None:
+        files.append((
+          os.path.join(dir, m.group(0)),
+          m.group(1),
+          m.group(2),
+        ))
 
   ##
   #  Pops the Group at the given index from the file.
   #  @param idx List index to pop the group from.  If "None", will pop from the
   #    end of the list.
   #  @return Group object.
-  def insert(self, idx):
+  def pop(self, idx):
     return self.groups.pop(idx)
 
   ##

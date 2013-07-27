@@ -22,7 +22,7 @@
 #  @date 3/8/2013 Created file.  -jc
 #  @author John Crawford
 
-from src.engine import mididevice
+from patchcorral.src.engine import mididevice
 import rtmidi
 
 

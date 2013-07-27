@@ -23,7 +23,7 @@
 #  @author John Crawford
 
 from . import GM
-from src.engine import mididevice
+from patchcorral.src.engine import mididevice
 import itertools
 
 
