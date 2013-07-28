@@ -39,6 +39,7 @@ nord = synthesizers.getMIDIInDevice(name='Nord Stage 2 MIDI')
 from patchcorral.src.engine import midirecplay
 rp = midirecplay.MIDIRecPlay()
 rp.setMIDIInDevice(nord)
+rp.setMIDIOutDevice(roland)
 rp.startRecording()
 
 def evalThread():
@@ -54,4 +55,4 @@ app.exec_()
 #######################
 
 rp.stopRecording()
-rp.startPlaying(roland, True)
+rp.startPlaying(None, True)

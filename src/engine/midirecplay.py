@@ -18,8 +18,9 @@
 ################################################################################
 
 from . import mididevice
-from . import synthnav
+from patchcorral.src.data import synthesizers
 from PySide import QtCore
+import rtmidi
 import time
 import threading
 import traceback
@@ -50,10 +51,21 @@ class MIDIRecPlay(QtCore.QObject):
     self.midi = None
     self.recording = []
     self.startTime = None
-    self.isRecording = False
-    self.isPlaying = False
+    self._isRecording = False
     self.player = MIDIPlay()
-    self.midiOutDevice = None
+    
+  ##
+  #  Returns the MIDIPlay object used for playback of recordings.
+  #  Use with care!
+  #  @return MIDIPlay object.
+  def getPlayer(self):
+    return self.player
+    
+  def isPlaying(self):
+    return self.player.isPlaying()
+  
+  def isRecording(self):
+    return self._isRecording
 
   ##
   #  Opens the given MIDI input port for recording.
@@ -64,16 +76,14 @@ class MIDIRecPlay(QtCore.QObject):
   def open(self, port=None, name=None, midiDevs=None):
     if self.midi is not None:
       self.close()
+      self.midi = None
     if port is None and name is None:
       port = self.port
       name = self.name
     if port is None and name is None:
       raise ValueError("Must provide a port number or port name.")
-    module = synthnav.getMIDIInDevice(port, name, midiDevs)
-    self.midi = module.MIDIInDevice(name)
-    self.port = port
-    self.name = name
-    self.midi.midiEvent.connect(self._onEventReceived)
+    midi = synthesizers.getMIDIInDevice(port, name, midiDevs)
+    self.setMIDIInDevice(midi)
 
   def close(self):
     assert self.midi is not None, "No MIDI Device available to close!"
@@ -88,34 +98,36 @@ class MIDIRecPlay(QtCore.QObject):
     self.port = midi.portNum
     self.name = midi.portName
     self.midi.midiEvent.connect(self._onEventReceived)
+    
+  def setMIDIOutDevice(self, midi):
+    self.player.setMIDIOutDevice(midi)
 
   def startRecording(self):
-    if not self.isPlaying:
+    if not self.isPlaying():
       self.startTime = None
       self.recording = []
-      self.isRecording = True
+      self._isRecording = True
     else:
       raise Exception('Cannot record while playing back!')
 
   def stopRecording(self):
-    self.isRecording = False
+    self._isRecording = False
+    for ch in range(1, 17):
+      self.recording.append( (time.time() - self.startTime, rtmidi.MidiMessage.allNotesOff(ch)) )
 
   def _onEventReceived(self, data):
+    print("_onEventReceived called; recording is {}".format(self.recording))
     self.eventReceived.emit(data)
-    if self.isRecording:
+    if self._isRecording:
       if self.startTime is None:
         self.startTime = time.time()
       self.recording.append( (time.time() - self.startTime, data) )
 
   def startPlaying(self, midiOutDevice=None, loop=False):
-    if midiOutDevice is not None:
-      self.midiOutDevice = midiOutDevice
-    if not self.isRecording:
-      self.isPlaying = True
-    else:
+    if self._isRecording:
       raise Exception('Cannot play back while recording!')
     self.player.loopPlayback(loop)
-    self.player.play(self.recording, self.midiOutDevice)
+    self.player.play(self.recording, midiOutDevice)
 
   def stopPlaying(self):
     self.player.stop()
@@ -157,15 +169,11 @@ class MIDIPlay(QtCore.QObject):
   def play(self, recording=None, midiOutDevice=None):
     if self.playbackThread is not None:
       raise Exception('Playback is already active.')
-    if recording is None:
-      recording = self.recording
-    else:
+    if recording is not None:
       self.recording = recording
-    if recording is None:
+    if self.recording is None:
       raise ValueError('No recording has been provided!')
-    if midiOutDevice is None:
-      midiOutDevice = self.midiOutDevice
-    else:
+    if midiOutDevice is not None:
       self.midiOutDevice = midiOutDevice
     self.playbackThread = threading.Thread(target=self._play)
     self._keepPlaying = True
@@ -177,7 +185,7 @@ class MIDIPlay(QtCore.QObject):
     self.playbackStarted.emit()
     try:
       assert self.startTime is None, "Playback already running!"
-      while self.loopMode and self._keepPlaying:
+      while self._keepPlaying:
         self.startTime = time.time()
         for playTime, data in self.recording:
           while self._keepPlaying:
@@ -193,6 +201,8 @@ class MIDIPlay(QtCore.QObject):
           if self.midiOutDevice is not None:
             self.midiOutDevice.sendMessage(data)
           self.playbackEvent.emit(data)
+        if not self.loopMode:
+          break
     except:
       traceback.print_exc()
     finally:
@@ -212,6 +222,9 @@ class MIDIPlay(QtCore.QObject):
     if val is not None:
       self.loopMode = val
     return self.loopMode
+    
+  def setMIDIOutDevice(self, dev):
+    self.midiOutDevice = dev
 
   ##
   #  Stops playback of the MIDI sequence.  Note that this may take at least 0.3

@@ -23,6 +23,7 @@
 from . import addressabletree
 from . import yamlfile
 from . import mididevice
+from patchcorral.src.data import synthesizers
 from PySide import QtCore
 import re
 import itertools
@@ -251,7 +252,7 @@ class SynthNav(QtCore.QObject):
   def refreshMIDIDevices(self):
     self.midiInDevs = mididevice.getMIDIInDevices()
     midiOutDevs = mididevice.getMIDIOutDevices()
-    self.midiOutDevs = list((mididevice.getMIDIOutDevice(dev[0], dev[1]) for dev in midiOutDevs))
+    self.midiOutDevs = list((synthesizers.getMIDIOutDevice(dev[0], dev[1]) for dev in midiOutDevs))
     self.fullVoiceList = list(itertools.chain(*(x.getVoiceList() for x in self.midiOutDevs)))
 
   ##

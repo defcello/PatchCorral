@@ -184,6 +184,8 @@ class MIDIDevice(QtCore.QObject):
 #  Class representing a MIDI Input Device.
 class MIDIInDevice(MIDIDevice):
 
+  ID = 'Generic USB-MIDI Device'
+
   ##
   #  Class initializer.
   #  @param id Identifier for the device input and output interfaces.  Can be an integer (index) or

@@ -21,7 +21,8 @@
 #  Initializes the GUI for SynthNav.
 
 from PySide import QtGui, QtCore
-from src.engine import synthnav, mididevice
+from patchcorral.src.engine import synthnav, mididevice
+from . import ui_midirecplay
 
 
 
@@ -36,6 +37,7 @@ class MainWidget(QtGui.QWidget):
     widget_filter = FilterWidget(self, self.synthNav)
     widget_voice_list = FilteredVoiceListWidget(self, self.synthNav)
     widget_queued_list = QueuedVoiceListWidget(self, self.synthNav)
+    widget_recplay = ui_midirecplay.RecPlayWidget(self, self.synthNav)
     #Lay it out.
     hbox_main = QtGui.QHBoxLayout(self)
     splitter_main = QtGui.QSplitter(QtCore.Qt.Orientation.Horizontal, self)
@@ -47,9 +49,13 @@ class MainWidget(QtGui.QWidget):
     widget_filters.setLayout(vbox_filters)
     splitter_filtering.addWidget(widget_filters)
     splitter_filtering.addWidget(widget_voice_list)
-    splitter_main.addWidget(splitter_filtering)
 
-    splitter_main.addWidget(widget_queued_list)
+    splitter_rhs = QtGui.QSplitter(QtCore.Qt.Orientation.Vertical, splitter_main)
+    splitter_rhs.addWidget(widget_queued_list)
+    splitter_rhs.addWidget(widget_recplay)
+    
+    splitter_main.addWidget(splitter_filtering)
+    splitter_main.addWidget(splitter_rhs)
     hbox_main.addWidget(splitter_main)
 
 class FilterWidget(QtGui.QWidget):
@@ -253,7 +259,7 @@ class QueuedVoiceListWidget(VoiceListWidget):
   def __init__(self, parent, synthNav):
     self.voices = synthNav.getVoiceList('queued')
     super().__init__(parent, synthNav)
-    self.pb_clearQueue = QtGui.QPushButton("Clear")
+    self.pb_clearQueue = QtGui.QPushButton("Clear Queue")
     self.vbox.addWidget(self.pb_clearQueue)
     self.pb_clearQueue.pressed.connect(self.onClearButtonPressed)
     self.tw_currVoices.itemDoubleClicked.connect(self.onItemDoubleClicked)
