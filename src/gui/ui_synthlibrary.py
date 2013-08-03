@@ -209,11 +209,12 @@ class VoiceListWidget(QtGui.QWidget):
   def __init__(self, parent, synthNav):
     super().__init__(parent)
     self.synthNav = synthNav
-    assert hasattr(self, 'voices'), '"self.voices" needs to be populated by the subclass.'
-    if len(self.voices) == 0:
+    assert hasattr(self, 'voiceList'), '"self.voiceList" needs to be populated by the subclass.'
+    self.voiceMap = {}
+    if len(self.voiceList) == 0:
       self.cols = mididevice.MIDIVoice.tags
     else:
-      self.cols = list(self.voices[0].keys())
+      self.cols = list(self.voiceList[0].keys())
     self.numCols = len(self.cols)
     #Create widgets.
     self.tw_currVoices = self.TableWidget(0, self.numCols, self)
@@ -223,7 +224,7 @@ class VoiceListWidget(QtGui.QWidget):
     self.vbox = QtGui.QVBoxLayout(self)
     self.vbox.addWidget(self.tw_currVoices)
     #Connect signals.
-    self.voices.listModified.connect(self.refreshCurrVoices)
+    self.voiceList.listModified.connect(self.refreshCurrVoices)
     self.tw_currVoices.keyPressed.connect(self.onKeypressEvent)
     
   def onKeypressEvent(self, event):
@@ -231,19 +232,34 @@ class VoiceListWidget(QtGui.QWidget):
 
   def refreshCurrVoices(self):
     print("refreshCurrVoices called")
+    rowCountI = self.tw_currVoices.rowCount()
+    rowCountF = min(len(self.voiceList), 1000)
     self.tw_currVoices.clearContents()
-    self.tw_currVoices.setRowCount(len(self.voices))
-    for row, voice in enumerate(self.voices):
+    print("refreshCurrVoices setting row count")
+    self.tw_currVoices.setRowCount(rowCountF)
+    # import pdb; pdb.set_trace()
+    assert self.tw_currVoices.rowCount() == rowCountF, '{} != {}'.format(self.tw_currVoices.rowCount(), rowCountF)
+    print("refreshCurrVoices entering for loops")
+    for row, voice in zip(range(rowCountF), self.voiceList):
       for col, attr in enumerate(self.cols):
-        item = QtGui.QTableWidgetItem(str(voice[attr]))
+        item = self.tw_currVoices.item(row, col)
+        if item is None or item is 0:
+          item = QtGui.QTableWidgetItem(str(voice[attr]))
+          isNewItem = True
+        else:
+          item.setText(str(voice[attr]))
+          isNewItem = False
+        # self.voiceMap[voice] = item
         item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
         item.voice = voice
-        self.tw_currVoices.setItem(row, col, item)
+        if isNewItem:
+          self.tw_currVoices.setItem(row, col, item)
+    print("refreshCurrVoices returning")
 
 class FilteredVoiceListWidget(VoiceListWidget):
 
   def __init__(self, parent, synthNav):
-    self.voices = synthNav.getFilteredVoiceList()
+    self.voiceList = synthNav.getFilteredVoiceList()
     super().__init__(parent, synthNav)
     self.tw_currVoices.itemDoubleClicked.connect(self.onItemDoubleClicked)
 
@@ -257,7 +273,7 @@ class FilteredVoiceListWidget(VoiceListWidget):
 class QueuedVoiceListWidget(VoiceListWidget):
 
   def __init__(self, parent, synthNav):
-    self.voices = synthNav.getVoiceList('queued')
+    self.voiceList = synthNav.getVoiceList('queued')
     super().__init__(parent, synthNav)
     self.pb_clearQueue = QtGui.QPushButton("Clear Queue")
     self.vbox.addWidget(self.pb_clearQueue)
@@ -265,7 +281,7 @@ class QueuedVoiceListWidget(VoiceListWidget):
     self.tw_currVoices.itemDoubleClicked.connect(self.onItemDoubleClicked)
 
   def onClearButtonPressed(self):
-    self.voices.clear()
+    self.voiceList.clear()
 
   def onItemDoubleClicked(self, item):
     item.voice.pc()
@@ -281,7 +297,7 @@ class QueuedVoiceListWidget(VoiceListWidget):
         item.voice.pc()
     elif event.key() in [QtCore.Qt.Key_Delete]:
       items = self.tw_currVoices.selectedItems()
-      self.voices.remove(*(item.voice for item in items))
+      self.voiceList.remove(*(item.voice for item in items))
 
 
 

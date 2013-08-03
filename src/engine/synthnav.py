@@ -109,6 +109,12 @@ class SynthNav(QtCore.QObject):
       return list(self.voicelist)[key]
       
     ##
+    #  Returns a copy of the internal voice list.
+    #  @return List of mididevice.MIDIVoice objects.
+    def getVoices(self, voices=None):
+      return list(self.voicelist)
+      
+    ##
     #  Iterates over the voice list.  This is what gets called by
     #  "for ... in ...".
     #  @return Iterator object.
@@ -138,17 +144,14 @@ class SynthNav(QtCore.QObject):
       for voice in voices:
         self.voicelist.remove(voice)
       self.listModified.emit()
-    
+      
     ##
-    #  Manipulates the internal voice list.
-    #  @param voices List of mididevice.MIDIVoice objects.  If "None", nothing
-    #    will be done.
-    #  @return New/current list of mididevice.MIDIVoice objects.
-    def voices(self, voices=None):
-      if voices is not None:
-        self.voicelist = set(voices)
-        self.listModified.emit()
-      return list(self.voicelist)
+    #  Sets the internal voice list to the given list.
+    #  @param voices List of mididevice.MIDIVoice objects.
+    #  @return "None".
+    def setVoices(self, voices):
+      self.voicelist = set(voices)
+      self.listModified.emit()
 
   ##
   #  Adds the given voice to the "favorites" list.
@@ -157,6 +160,19 @@ class SynthNav(QtCore.QObject):
   #  @return "None".
   def addFavoriteVoice(self, voice):
     self.voiceLists['favorites'].add(voice)
+    
+  ##
+  #  Manipulates the filter being used by the "filtered" voice list.
+  #  @param filter String with a Python expression.  See "SynthNav.newVoiceList"
+  #    for more information.  If "None", nothing will change.
+  #  @param voices List of voices to use as the unfiltered data.  If "None",
+  #    will use the unfiltered master voice list.
+  #  @return New filter string (or current if "filter" is "None").
+  #  @post "filtered" voice list will be repopulated.
+  def filter(self, filter=None, voices=None):
+    if filter is not None:
+      self.newVoiceList(filter, 'filtered', voices)
+    return self.currFilter
     
   def getCurrCategories(self):
     return set(x.category for x in self.voiceLists['filtered'])
@@ -217,8 +233,11 @@ class SynthNav(QtCore.QObject):
       voiceList = self.fullVoiceList
     else:
       voiceList = voices
-    for v in self.fullVoiceList:
-      if eval(filter):
+    d = {}
+    exec('def f(v): return {}'.format(filter), d)
+    f = d['f']
+    for v in voiceList:
+      if f(v):
         yield v
 
   ##
@@ -232,6 +251,8 @@ class SynthNav(QtCore.QObject):
   #    will use the unfiltered master voice list.
   #  @return "None".
   def newVoiceList(self, filter='True', name=None, voices=None):
+    if voices is None:
+      voices = self.fullVoiceList
     try:
       ret = self.voiceLists[name]
     except KeyError:
@@ -240,7 +261,7 @@ class SynthNav(QtCore.QObject):
         assert isinstance(ret, self.MIDIVoiceList)
         self.voiceLists[name] = ret
     else:
-      ret.voices(self.iter(filter, voices))
+      ret.setVoices(self.iter(filter, voices))
     if name == 'filtered':  #Do this at the end so listeners get the updated voice list as well.
       self.currFilter = filter
       self.filterChanged.emit(filter)
@@ -270,16 +291,3 @@ class SynthNav(QtCore.QObject):
   #  @return "None".
   def selectVoice(self, voice):
     voice.pc()
-    
-  ##
-  #  Manipulates the filter being used by the "filtered" voice list.
-  #  @param filter String with a Python expression.  See "SynthNav.newVoiceList"
-  #    for more information.  If "None", nothing will change.
-  #  @param voices List of voices to use as the unfiltered data.  If "None",
-  #    will use the unfiltered master voice list.
-  #  @return New filter string (or current if "filter" is "None").
-  #  @post "filtered" voice list will be repopulated.
-  def filter(self, filter=None, voices=None):
-    if filter is not None:
-      self.newVoiceList(filter, 'filtered', voices)
-    return self.currFilter
