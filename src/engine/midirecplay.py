@@ -116,7 +116,7 @@ class MIDIRecPlay(QtCore.QObject):
       self.recording.append( (time.time() - self.startTime, rtmidi.MidiMessage.allNotesOff(ch)) )
 
   def _onEventReceived(self, data):
-    print("_onEventReceived called; recording is {}".format(self.recording))
+    # print("_onEventReceived called; recording is {}".format(self.recording))
     self.eventReceived.emit(data)
     if self._isRecording:
       if self.startTime is None:

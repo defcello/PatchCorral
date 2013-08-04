@@ -296,8 +296,12 @@ class QueuedVoiceListWidget(VoiceListWidget):
       else:
         item.voice.pc()
     elif event.key() in [QtCore.Qt.Key_Delete]:
+      currCell = [self.tw_currVoices.currentRow(), self.tw_currVoices.currentColumn()]
       items = self.tw_currVoices.selectedItems()
       self.voiceList.remove(*(item.voice for item in items))
+      if currCell[0] >= self.tw_currVoices.rowCount():
+        currCell[0] = self.tw_currVoices.rowCount()
+      self.tw_currVoices.setCurrentCell(*currCell)
 
 
 
