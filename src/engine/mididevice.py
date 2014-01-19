@@ -35,15 +35,15 @@ import yaml
 #  Returns a list of the available MIDI Input Devices.
 #  @return List of tuples "(portNum, portName)".
 def getMIDIInDevices():
-    midi = rtmidi.RtMidiIn()
-    return list((port, midi.getPortName(port)) for port in range(midi.getPortCount()))
+    midi = rtmidi.MidiIn()
+    return list((port, midi.get_port_name(port)) for port in range(midi.get_port_count()))
 
 ##
 #  Returns a list of the available MIDI Output Devices.
 #  @return List of tuples "(portNum, portName)".
 def getMIDIOutDevices():
-    midi = rtmidi.RtMidiOut()
-    return list((port, midi.getPortName(port)) for port in range(midi.getPortCount()))
+    midi = rtmidi.MidiOut()
+    return list((port, midi.get_port_name(port)) for port in range(midi.get_port_count()))
 
 ##
 #  Class representing a specific MIDI voice.
@@ -105,9 +105,9 @@ class MIDIVoice():
   #  Sends the MIDI messages that will select this voice on the given device.
   #  @return None.
   def pc(self):
-    self.device.sendMessage(rtmidi.MidiMessage.controllerEvent(self.channel, 0x00, self.msb))
-    self.device.sendMessage(rtmidi.MidiMessage.controllerEvent(self.channel, 0x20, self.lsb))
-    self.device.sendMessage(rtmidi.MidiMessage.programChange(self.channel, self._pc))
+    self.device.send_message((0xB0 | (self.channel - 1), 0x00, self.msb))
+    self.device.send_message((0xB0 | (self.channel - 1), 0x20, self.lsb))
+    self.device.send_message((0xC0 | (self.channel - 1), self._pc))
 
   ##
   #  For use by PyYAML.
@@ -157,7 +157,7 @@ class MIDIDevice(QtCore.QObject):
     if port is None:
       if name is None:
         raise ValueError('Must provide at least the "name" or "port" to identify a MIDI device.')
-      portNames = list(self.midi.getPortName(port) for port in range(self.midi.getPortCount()))
+      portNames = list(self.midi.get_port_name(port) for port in range(self.midi.get_port_count()))
       for port, portName in enumerate(portNames):
         if portName == name:
           self.portNum = port
@@ -165,19 +165,19 @@ class MIDIDevice(QtCore.QObject):
       else:
         raise ValueError('Unable to find device matching name "{}" in list "{}".'.format(name, portNames))
     else:
-      portCount = self.midi.getPortCount()
+      portCount = self.midi.get_port_count()
       if 0 > port > portCount:
         raise ValueError('Given port "{}" is outside the expected range (0-{}).'.format(port, portCount))
       self.portNum = port
     if name is None:
-      self.portName = self.midi.getPortName(port)
+      self.portName = self.midi.get_port_name(port)
     else:
       self.portName = name
 
     #Open the MIDI port!
-    self.midi.openPort(self.portNum)
+    self.midi.open_port(self.portNum)
 
-  def getPortName(self):
+  def get_port_name(self):
     return self.portName
 
 ##
@@ -193,7 +193,7 @@ class MIDIInDevice(MIDIDevice):
   def __init__(self, port, name=None):
     if name is None:
       name = MIDIInDevice.ID
-    self.midi = rtmidi.RtMidiIn()
+    self.midi = rtmidi.MidiIn()
     self.midi.setCallback(self.onMIDIMsg)
     super().__init__(port, name)
     self.midiOutDevice = None
@@ -225,7 +225,7 @@ class MIDIInDevice(MIDIDevice):
       with self.forwardingLock:
         if self.midiOutChannel is not None:
           data.setChannel(self.midiOutChannel)
-        self.midiOutDevice.sendMessage(data)
+        self.midiOutDevice.send_message(data)
 
 ##
 #  Class representing a MIDI Output Device.
@@ -268,7 +268,7 @@ class MIDIOutDevice(MIDIDevice):
       name = MIDIOutDevice.ID
     if voices is None:
       voices = []
-    self.midi = rtmidi.RtMidiOut()
+    self.midi = rtmidi.MidiOut()
     super().__init__(port, name)
     self.voices = voices
     self._defaultChannel = defaultChannel
@@ -327,9 +327,9 @@ class MIDIOutDevice(MIDIDevice):
     onMsg = rtmidi.MidiMessage.noteOn(channel, note, vel)
     offMsg = rtmidi.MidiMessage.noteOff(channel, note)
     def play():
-      self.sendMessage(onMsg)
+      self.send_message(onMsg)
       time.sleep(duration)
-      self.sendMessage(offMsg)
+      self.send_message(offMsg)
     t = threading.Thread(target=play)
     t.start()
 
@@ -337,9 +337,9 @@ class MIDIOutDevice(MIDIDevice):
   #  Sends the given message to the MIDI device.
   #  @param msg rtmidi.MidiMessage object
   #  @return None.
-  def sendMessage(self, msg):
+  def send_message(self, msg):
     with self.sendLock:
-      self.midi.sendMessage(msg)
+      self.midi.send_message(msg)
     self.midiEvent.emit(msg)
 
   ##
@@ -348,4 +348,4 @@ class MIDIOutDevice(MIDIDevice):
   #  @return None.
   def sendMessages(self, *msgs):
     for msg in msgs:
-      self.midi.sendMessage(msg)
+      self.midi.send_message(msg)

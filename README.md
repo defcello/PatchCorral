@@ -22,7 +22,7 @@ Installation
 ============
 This project requires:
  - Python 3.3 (will likely work on any Python 3 version)
- - "pyrtmidi" (http://trac.assembla.com/pkaudio/wiki/pyrtmidi) installed as a library for Python 3.3.  Note that the current public version of pkaudio supports Python 2.  I have adapted it to Python 3 and am attempting to contact the author to get his input on how this new code should be shared.  So far, this has not been fruitful, so I'll probably make a Git repo of this customized version once I have time to work out the licensing/referencing details.
+ - "python-rtmidi" (https://pypi.python.org/pypi/python-rtmidi).
  - PySide
 
 Usage

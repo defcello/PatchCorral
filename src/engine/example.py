@@ -43,7 +43,6 @@ rp.setMIDIOutDevice(roland)
 rp.startRecording()
 
 def evalThread():
-  import pdb
   pdb.set_trace()
 
 t = threading.Thread(target=evalThread)

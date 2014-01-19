@@ -70,7 +70,7 @@ class FilterWidget(QtGui.QWidget):
     # Synth Select
     self.lw_synth = QtGui.QListWidget(self)
     self.lw_synth.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
-    self.lw_synth.addItems([x.getPortName() for x in self.synthNav.getMIDIOutDevs()])
+    self.lw_synth.addItems([x.get_port_name() for x in self.synthNav.getMIDIOutDevs()])
     # Channel Select
     self.lw_channel = QtGui.QListWidget(self)
     self.lw_channel.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
@@ -237,7 +237,6 @@ class VoiceListWidget(QtGui.QWidget):
     self.tw_currVoices.clearContents()
     print("refreshCurrVoices setting row count")
     self.tw_currVoices.setRowCount(rowCountF)
-    # import pdb; pdb.set_trace()
     assert self.tw_currVoices.rowCount() == rowCountF, '{} != {}'.format(self.tw_currVoices.rowCount(), rowCountF)
     print("refreshCurrVoices entering for loops")
     for row, voice in zip(range(rowCountF), self.voiceList):

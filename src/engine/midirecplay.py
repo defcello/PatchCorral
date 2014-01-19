@@ -199,7 +199,7 @@ class MIDIPlay(QtCore.QObject):
                 time.sleep(sleepDur)
             break
           if self.midiOutDevice is not None:
-            self.midiOutDevice.sendMessage(data)
+            self.midiOutDevice.send_message(data)
           self.playbackEvent.emit(data)
         if not self.loopMode:
           break
