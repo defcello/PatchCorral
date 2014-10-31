@@ -41,7 +41,6 @@ class MainWidget(QtGui.QWidget):
     #Lay it out.
     hbox_main = QtGui.QHBoxLayout(self)
     splitter_main = QtGui.QSplitter(QtCore.Qt.Orientation.Horizontal, self)
-
     splitter_filtering = QtGui.QSplitter(QtCore.Qt.Orientation.Vertical, splitter_main)  #For customizing size of filtering widgets
     widget_filters = QtGui.QWidget(splitter_filtering)  #Groups filter widgets
     vbox_filters = QtGui.QVBoxLayout()  #Layout for filter widgets
@@ -49,11 +48,9 @@ class MainWidget(QtGui.QWidget):
     widget_filters.setLayout(vbox_filters)
     splitter_filtering.addWidget(widget_filters)
     splitter_filtering.addWidget(widget_voice_list)
-
     splitter_rhs = QtGui.QSplitter(QtCore.Qt.Orientation.Vertical, splitter_main)
     splitter_rhs.addWidget(widget_queued_list)
     splitter_rhs.addWidget(widget_recplay)
-    
     splitter_main.addWidget(splitter_filtering)
     splitter_main.addWidget(splitter_rhs)
     hbox_main.addWidget(splitter_main)

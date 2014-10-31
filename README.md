@@ -24,6 +24,7 @@ This project requires:
  - Python 3.3 (will likely work on any Python 3 version)
  - "python-rtmidi" (https://pypi.python.org/pypi/python-rtmidi).
  - PySide
+ - PyYAML
 
 Usage
 =====

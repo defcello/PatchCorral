@@ -63,7 +63,7 @@ class SynthNav(QtCore.QObject):
     self.newVoiceList('False', 'queued', [])
 
   ##
-  #  Class for maintaintg lists of voice objects.
+  #  Class for maintaining lists of voice objects.
   class MIDIVoiceList(QtCore.QObject):
   
     listModified = QtCore.Signal()
@@ -271,9 +271,15 @@ class SynthNav(QtCore.QObject):
   #  Refreshes the internal list of available MIDI devices.
   #  @return "None".
   def refreshMIDIDevices(self):
-    self.midiInDevs = mididevice.getMIDIInDevices()
+    # self.midiInDevs = mididevice.getMIDIInDevices()
+    self.midiInDevs = []
     midiOutDevs = mididevice.getMIDIOutDevices()
-    self.midiOutDevs = list((synthesizers.getMIDIOutDevice(dev[0], dev[1]) for dev in midiOutDevs))
+    # self.midiOutDevs = list((synthesizers.getMIDIOutDevice(dev[0], dev[1]) for dev in midiOutDevs))
+    self.midiOutDevs = []
+    import pdb; pdb.set_trace()
+    for dev in midiOutDevs:
+      if 'FANTOM' in dev[1]:
+        self.midiOutDevs.append(synthesizers.getMIDIOutDevice(dev[0], dev[1]))
     self.fullVoiceList = list(itertools.chain(*(x.getVoiceList() for x in self.midiOutDevs)))
 
   ##
