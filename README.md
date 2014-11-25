@@ -22,8 +22,9 @@ Installation
 ============
 This project requires:
  - Python 3.3 (will likely work on any Python 3 version)
- - "python-rtmidi" (https://pypi.python.org/pypi/python-rtmidi).
+ - "python-rtmidi" (https://pypi.python.org/pypi/python-rtmidi) [NOTE: v0.5b1 doesn't work on Windows!]
  - PySide
+ - PyYAML (http://pyyaml.org/wiki/PyYAML)
 
 Usage
 =====
