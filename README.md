@@ -21,8 +21,8 @@ GNU GPL v3 (http://www.gnu.org/licenses/#GPL)
 Installation
 ============
 This project requires:
- - Python 3.3 (will likely work on any Python 3 version)
- - "python-rtmidi" (https://pypi.python.org/pypi/python-rtmidi) [NOTE: v0.5b1 doesn't work on Windows!]
+ - Python 3.3 (requires "enum")
+ - "python-rtmidi" v0.4b (https://pypi.python.org/pypi/python-rtmidi)
  - PySide
  - PyYAML (http://pyyaml.org/wiki/PyYAML)
 

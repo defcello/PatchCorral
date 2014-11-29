@@ -28,7 +28,7 @@ import rtmidi
 
 
 PROGRAMS = [
-  ('ChildrenOfEden', 0, 3, 98, '', 'D:20:4'),
+  # ('ChildrenOfEden', 0, 3, 98, '', 'D:20:4'),
 ]
 
 class MIDIInDevice(mididevice.MIDIInDevice):

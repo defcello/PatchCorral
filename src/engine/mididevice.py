@@ -22,6 +22,8 @@
 #  @date 03/08/2013 Created file.  -jc
 #  @author John Crawford
 
+
+# from patchcorral.src.data import synthesizers  #imported below to dodge circular import errors
 from PySide import QtCore
 import re  #For user-defined iteration filters.
 import rtmidi
@@ -73,11 +75,11 @@ class MIDIVoice():
   #  @param voiceNum Number of the voice as displayed on the device
   def __init__(self, name, device, channel, msb, lsb, pc, category=None, voiceNum=None):
     self.name = name
+    self.device = device
+    self.channel = channel
     self.msb = msb
     self.lsb = lsb
     self._pc = pc
-    self.device = device
-    self.channel = channel
     self.category = category
     self.voiceNum = voiceNum
 
@@ -90,6 +92,21 @@ class MIDIVoice():
       except AttributeError:
         raise KeyError('Unable to find key {}.'.format(key))
     return v
+
+  ##
+  #  Generates a pickle-able state for this object.
+  #  @return "None".
+  def __getstate__(self):
+    return {
+      "name": self.name,
+      "deviceName": self.device.get_port_name(),
+      "channel": self.channel,
+      "msb": self.msb,
+      "lsb": self.lsb,
+      "pc": self._pc,
+      "category": self.category,
+      "voiceNum": self.voiceNum,
+    }
 
   def __iter__(self):
     return (tag for tag in self.tags)
@@ -128,6 +145,15 @@ class MIDIVoice():
     setattr(v, keys[-1], val)
 
   ##
+  #  Receives a pickled state and attempts to reproduce the original object.
+  #  @return "None".
+  def __setstate__(self, state):
+    from patchcorral.src.data import synthesizers  #imported here to dodge circular import errors
+    state["device"] = synthesizers.getMIDIOutDevice(None, state["deviceName"])
+    del state["deviceName"]
+    self.__init__(**state)
+
+  ##
   #  Method for converting this object to string.  Prints out essential information.
   def __str__(self):
     return '\n'.join('{}: {}'.format(key, val) for key, val in self.items())
@@ -142,7 +168,7 @@ class MIDIVoice():
 #  an rtmidi object.
 class MIDIDevice(QtCore.QObject):
 
-  ## Signals when a MIDI message has been sent or recieved.
+  ## Signals when a MIDI message has been sent or received.
   midiEvent = QtCore.Signal(object)
 
   ##

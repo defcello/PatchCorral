@@ -22,7 +22,8 @@
 
 from PySide import QtGui, QtCore
 from patchcorral.src.engine import synthnav, mididevice
-from . import ui_midirecplay
+from patchcorral.src.gui import ui_midirecplay, ui_voicelists
+
 
 
 
@@ -34,10 +35,11 @@ class MainWidget(QtGui.QWidget):
     self.setWindowTitle('PatchCorral')
     self.setGeometry(300, 300, 800, 600)
     #Build the widgets.
-    widget_filter = FilterWidget(self, self.synthNav)
-    widget_voice_list = FilteredVoiceListWidget(self, self.synthNav)
-    widget_queued_list = QueuedVoiceListWidget(self, self.synthNav)
-    widget_recplay = ui_midirecplay.RecPlayWidget(self, self.synthNav)
+    self.widget_filter = FilterWidget(self, self.synthNav)
+    self.widget_voice_list = ui_voicelists.FilteredVoiceListWidget(self, self.synthNav)
+    self.widget_queued_list = ui_voicelists.VoiceListEditWidget(self, self.synthNav)
+    self.widget_recplay = ui_midirecplay.RecPlayWidget(self, self.synthNav)
+    self.widget_listsel = ui_voicelists.VoiceListSelectWidget(self, self.synthNav)
     #Lay it out.
     hbox_main = QtGui.QHBoxLayout(self)
     splitter_main = QtGui.QSplitter(QtCore.Qt.Orientation.Horizontal, self)
@@ -45,18 +47,28 @@ class MainWidget(QtGui.QWidget):
     splitter_filtering = QtGui.QSplitter(QtCore.Qt.Orientation.Vertical, splitter_main)  #For customizing size of filtering widgets
     widget_filters = QtGui.QWidget(splitter_filtering)  #Groups filter widgets
     vbox_filters = QtGui.QVBoxLayout()  #Layout for filter widgets
-    vbox_filters.addWidget(widget_filter)
+    vbox_filters.addWidget(self.widget_filter)
     widget_filters.setLayout(vbox_filters)
     splitter_filtering.addWidget(widget_filters)
-    splitter_filtering.addWidget(widget_voice_list)
+    splitter_filtering.addWidget(self.widget_voice_list)
 
     splitter_rhs = QtGui.QSplitter(QtCore.Qt.Orientation.Vertical, splitter_main)
-    splitter_rhs.addWidget(widget_queued_list)
-    splitter_rhs.addWidget(widget_recplay)
+    splitter_rhs.addWidget(self.widget_listsel)
+    splitter_rhs.addWidget(self.widget_queued_list)
+    splitter_rhs.addWidget(self.widget_recplay)
     
     splitter_main.addWidget(splitter_filtering)
     splitter_main.addWidget(splitter_rhs)
     hbox_main.addWidget(splitter_main)
+    #Connect the signals.
+    self.widget_listsel.selectionChanged.connect(self.widget_queued_list.setVoiceList)
+    self.widget_voice_list.voiceDoubleClicked.connect(self.addVoiceToCurrList)
+    
+  def addVoiceToCurrList(self, voice):
+    self.getCurrVoiceList().add(voice)
+    
+  def getCurrVoiceList(self):
+    return self.widget_queued_list.voiceList
 
 class FilterWidget(QtGui.QWidget):
 
@@ -195,113 +207,6 @@ class CustomFilterWidget(QtGui.QWidget):
       if n is None:
         n = ''
       self.synthNav.filter(currFilter.replace(o, n).strip())
-
-class VoiceListWidget(QtGui.QWidget):
-
-  class TableWidget(QtGui.QTableWidget):
-    
-    keyPressed = QtCore.Signal(QtGui.QKeyEvent)
-    
-    def keyPressEvent(self, event):
-      super().keyPressEvent(event)
-      self.keyPressed.emit(event)
-
-  def __init__(self, parent, synthNav):
-    super().__init__(parent)
-    self.synthNav = synthNav
-    assert hasattr(self, 'voiceList'), '"self.voiceList" needs to be populated by the subclass.'
-    self.voiceMap = {}
-    if len(self.voiceList) == 0:
-      self.cols = mididevice.MIDIVoice.tags
-    else:
-      self.cols = list(self.voiceList[0].keys())
-    self.numCols = len(self.cols)
-    #Create widgets.
-    self.tw_currVoices = self.TableWidget(0, self.numCols, self)
-    self.tw_currVoices.setHorizontalHeaderLabels(self.cols)
-    self.refreshCurrVoices()
-    #Lay it out.
-    self.vbox = QtGui.QVBoxLayout(self)
-    self.vbox.addWidget(self.tw_currVoices)
-    #Connect signals.
-    self.voiceList.listModified.connect(self.refreshCurrVoices)
-    self.tw_currVoices.keyPressed.connect(self.onKeypressEvent)
-    
-  def onKeypressEvent(self, event):
-    pass
-
-  def refreshCurrVoices(self):
-    print("refreshCurrVoices called")
-    rowCountI = self.tw_currVoices.rowCount()
-    rowCountF = min(len(self.voiceList), 1000)
-    self.tw_currVoices.clearContents()
-    print("refreshCurrVoices setting row count")
-    self.tw_currVoices.setRowCount(rowCountF)
-    assert self.tw_currVoices.rowCount() == rowCountF, '{} != {}'.format(self.tw_currVoices.rowCount(), rowCountF)
-    print("refreshCurrVoices entering for loops")
-    for row, voice in zip(range(rowCountF), self.voiceList):
-      for col, attr in enumerate(self.cols):
-        item = self.tw_currVoices.item(row, col)
-        if item is None or item is 0:
-          item = QtGui.QTableWidgetItem(str(voice[attr]))
-          isNewItem = True
-        else:
-          item.setText(str(voice[attr]))
-          isNewItem = False
-        # self.voiceMap[voice] = item
-        item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
-        item.voice = voice
-        if isNewItem:
-          self.tw_currVoices.setItem(row, col, item)
-    print("refreshCurrVoices returning")
-
-class FilteredVoiceListWidget(VoiceListWidget):
-
-  def __init__(self, parent, synthNav):
-    self.voiceList = synthNav.getFilteredVoiceList()
-    super().__init__(parent, synthNav)
-    self.tw_currVoices.itemDoubleClicked.connect(self.onItemDoubleClicked)
-
-  def onItemDoubleClicked(self, item):
-    self.synthNav.getVoiceList('queued').add(item.voice)
-    
-  def onKeypressEvent(self, event):
-    if event.key() in [QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return]:
-      self.synthNav.getVoiceList('queued').adds(item.voice for item in self.tw_currVoices.selectedItems())
-
-class QueuedVoiceListWidget(VoiceListWidget):
-
-  def __init__(self, parent, synthNav):
-    self.voiceList = synthNav.getVoiceList('queued')
-    super().__init__(parent, synthNav)
-    self.pb_clearQueue = QtGui.QPushButton("Clear Queue")
-    self.vbox.addWidget(self.pb_clearQueue)
-    self.pb_clearQueue.pressed.connect(self.onClearButtonPressed)
-    self.tw_currVoices.itemDoubleClicked.connect(self.onItemDoubleClicked)
-
-  def onClearButtonPressed(self):
-    self.voiceList.clear()
-
-  def onItemDoubleClicked(self, item):
-    item.voice.pc()
-    
-  def onKeypressEvent(self, event):
-    if event.key() in [QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return]:
-      items = self.tw_currVoices.selectedItems()
-      try:
-        item = items[0]
-      except IndexError:
-        pass
-      else:
-        item.voice.pc()
-    elif event.key() in [QtCore.Qt.Key_Delete]:
-      currCell = [self.tw_currVoices.currentRow(), self.tw_currVoices.currentColumn()]
-      items = self.tw_currVoices.selectedItems()
-      self.voiceList.remove(*(item.voice for item in items))
-      if currCell[0] >= self.tw_currVoices.rowCount():
-        currCell[0] = self.tw_currVoices.rowCount()
-      self.tw_currVoices.setCurrentCell(*currCell)
-
 
 
 

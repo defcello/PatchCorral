@@ -38,6 +38,9 @@ import itertools
 class SynthNav(QtCore.QObject):
 
   filterChanged = QtCore.Signal(str)
+  
+  ## Dictionary of voice lists with names as keys and .
+  voiceLists = None
 
   ##
   #  Class initializer.
@@ -48,22 +51,24 @@ class SynthNav(QtCore.QObject):
     self.userdata = self.userdataFile.getRoot()  #Note that any modifications to this will modify
                                                  #the internal structure of "userdataFile".
     if self.userdata is None:
-      self.userdata = addressabletree.AddressableTree()
+      self.userdata = {}
       self.userdataFile.setRoot(self.userdata)
     self.midiInDevs = None
     self.midiOutDevs = None
     self.currFilter = None
     #Call initialization functions.
     self.refreshMIDIDevices()
-    self.voiceLists = {
-      'favorites': self.MIDIVoiceList(),
-    }
+    if 'voiceLists' not in self.userdata:
+      self.userdata['voiceLists'] = {
+        'favorites': self.MIDIVoiceList(),
+      }
+    self.voiceLists = self.userdata['voiceLists']
     self.newVoiceList(name='all')
     self.newVoiceList(name='filtered')
     self.newVoiceList('False', 'queued', [])
 
   ##
-  #  Class for maintaintg lists of voice objects.
+  #  Class for maintaining lists of voice objects.
   class MIDIVoiceList(QtCore.QObject):
   
     listModified = QtCore.Signal()

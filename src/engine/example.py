@@ -24,7 +24,7 @@
 #  @date 3/12/2013 Created file.  -jc
 
 import os
-os.chdir(r'X:\PatchCorral')
+os.chdir(r'P:\Music Library Tools\PatchCorral')
 from patchcorral.src.engine import mididevice
 from patchcorral.src.engine import midirecplay
 from patchcorral.src.data import synthesizers
