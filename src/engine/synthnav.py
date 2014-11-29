@@ -32,6 +32,103 @@ import itertools
 
 
 ##
+#  Class for maintaining lists of voice objects.
+class MIDIVoiceList(QtCore.QObject):
+
+  listModified = QtCore.Signal()
+  
+  ##
+  #  Class constructor.
+  #  @param voices List of src.engine.mididevice.MIDIVoice objects.
+  #  @return "None".
+  def __init__(self, voices=None):
+    super().__init__()
+    if voices is None:
+      voices = []
+    self.voiceList = set(voices)
+    
+  ##
+  #  Add the given voice to the list.
+  #  @param voice src.engine.mididevice.MIDIVoice object.
+  #  @return "None".
+  def add(self, voice):
+    self.voiceList.add(voice)
+    self.listModified.emit()
+    
+  ##
+  #  Add the given voices to the list.
+  #  @param voices List of src.engine.mididevice.MIDIVoice objects.
+  #  @return "None".
+  def adds(self, voices):
+    self.voiceList |= set(voices)
+    self.listModified.emit()
+    
+  ##
+  #  Removes all voices from the list.
+  #  @return "None".
+  def clear(self):
+    self.voiceList = set()
+    self.listModified.emit()
+    
+  ##
+  #  Enables users to reference a particular voice in the list.
+  #  @param key Integer index.
+  def __getitem__(self, key):
+    print('getitem called with key {}'.format(key))
+    return list(self.voiceList)[key]
+    
+  def __getstate__(self):
+    return self.voiceList
+    
+  ##
+  #  Returns a copy of the internal voice list.
+  #  @return List of mididevice.MIDIVoice objects.
+  def getVoices(self, voices=None):
+    return list(self.voiceList)
+    
+  ##
+  #  Iterates over the voice list.  This is what gets called by
+  #  "for ... in ...".
+  #  @return Iterator object.
+  def __iter__(self):
+    print('iter called')
+    return iter(self.voiceList)
+    
+  ##
+  #  Returns an iterator that, as it is iterated, will apply the current voice
+  #  by calling it's "pc" method.
+  #  @return Iterator object.
+  def iterPC(self):
+    for voice in self.voiceList:
+      voice.pc()
+      yield voice
+    
+  ##
+  #  Magic method for getting the length of the list.
+  def __len__(self):
+    return len(self.voiceList)
+    
+  ##
+  #  Removes the given voice from the list.
+  #  @param voices Any number of src.engine.mididevice.MIDIVoice objects.
+  #  @return "None".
+  def remove(self, *voices):
+    for voice in voices:
+      self.voiceList.remove(voice)
+    self.listModified.emit()
+    
+  def __setstate__(self, state):
+    self.voiceList = state
+    
+  ##
+  #  Sets the internal voice list to the given list.
+  #  @param voices List of mididevice.MIDIVoice objects.
+  #  @return "None".
+  def setVoices(self, voices):
+    self.voiceList = set(voices)
+    self.listModified.emit()
+
+##
 #  Class for navigating voices within a single synthesizer.  Supports generation
 #  of filtered lists of its voices, saving those filtered lists to file, and a
 #  favorites list of voices.
@@ -52,7 +149,6 @@ class SynthNav(QtCore.QObject):
                                                  #the internal structure of "userdataFile".
     if self.userdata is None:
       self.userdata = {}
-      self.userdataFile.setRoot(self.userdata)
     self.midiInDevs = None
     self.midiOutDevs = None
     self.currFilter = None
@@ -60,103 +156,13 @@ class SynthNav(QtCore.QObject):
     self.refreshMIDIDevices()
     if 'voiceLists' not in self.userdata:
       self.userdata['voiceLists'] = {
-        'favorites': self.MIDIVoiceList(),
+        'favorites': MIDIVoiceList(),
       }
     self.voiceLists = self.userdata['voiceLists']
     self.newVoiceList(name='all')
     self.newVoiceList(name='filtered')
     self.newVoiceList('False', 'queued', [])
-
-  ##
-  #  Class for maintaining lists of voice objects.
-  class MIDIVoiceList(QtCore.QObject):
-  
-    listModified = QtCore.Signal()
-    
-    ##
-    #  Class constructor.
-    #  @param voices List of src.engine.mididevice.MIDIVoice objects.
-    #  @return "None".
-    def __init__(self, voices=None):
-      super().__init__()
-      if voices is None:
-        voices = []
-      self.voicelist = set(voices)
-      
-    ##
-    #  Add the given voice to the list.
-    #  @param voice src.engine.mididevice.MIDIVoice object.
-    #  @return "None".
-    def add(self, voice):
-      self.voicelist.add(voice)
-      self.listModified.emit()
-      
-    ##
-    #  Add the given voices to the list.
-    #  @param voices List of src.engine.mididevice.MIDIVoice objects.
-    #  @return "None".
-    def adds(self, voices):
-      self.voicelist |= set(voices)
-      self.listModified.emit()
-      
-    ##
-    #  Removes all voices from the list.
-    #  @return "None".
-    def clear(self):
-      self.voicelist = set()
-      self.listModified.emit()
-      
-    ##
-    #  Enables users to reference a particular voice in the list.
-    #  @param key Integer index.
-    def __getitem__(self, key):
-      print('getitem called with key {}'.format(key))
-      return list(self.voicelist)[key]
-      
-    ##
-    #  Returns a copy of the internal voice list.
-    #  @return List of mididevice.MIDIVoice objects.
-    def getVoices(self, voices=None):
-      return list(self.voicelist)
-      
-    ##
-    #  Iterates over the voice list.  This is what gets called by
-    #  "for ... in ...".
-    #  @return Iterator object.
-    def __iter__(self):
-      print('iter called')
-      return iter(self.voicelist)
-      
-    ##
-    #  Returns an iterator that, as it is iterated, will apply the current voice
-    #  by calling it's "pc" method.
-    #  @return Iterator object.
-    def iterPC(self):
-      for voice in self.voicelist:
-        voice.pc()
-        yield voice
-      
-    ##
-    #  Magic method for getting the length of the list.
-    def __len__(self):
-      return len(self.voicelist)
-      
-    ##
-    #  Removes the given voice from the list.
-    #  @param voices Any number of src.engine.mididevice.MIDIVoice objects.
-    #  @return "None".
-    def remove(self, *voices):
-      for voice in voices:
-        self.voicelist.remove(voice)
-      self.listModified.emit()
-      
-    ##
-    #  Sets the internal voice list to the given list.
-    #  @param voices List of mididevice.MIDIVoice objects.
-    #  @return "None".
-    def setVoices(self, voices):
-      self.voicelist = set(voices)
-      self.listModified.emit()
+    self.subscribeVoiceLists()
 
   ##
   #  Adds the given voice to the "favorites" list.
@@ -208,7 +214,7 @@ class SynthNav(QtCore.QObject):
   
   ##
   #  Returns the voices that are currently available from the filtered list.
-  #  @return SynthNav.MIDIVoiceList object.
+  #  @return MIDIVoiceList object.
   def getFilteredVoiceList(self):
     return self.voiceLists['filtered']
     
@@ -222,7 +228,7 @@ class SynthNav(QtCore.QObject):
   #  Returns the voice list corresponding with the given name.
   #  @param name Name of the voice list to load.  Stock names are "favorites",
   #    "filtered", "all", and "queued" (uses "all" by default).
-  #  @return SynthNav.MIDIVoiceList object.
+  #  @return MIDIVoiceList object.
   def getVoiceList(self, name='all'):
     return self.voiceLists[name]
 
@@ -261,9 +267,9 @@ class SynthNav(QtCore.QObject):
     try:
       ret = self.voiceLists[name]
     except KeyError:
-      ret = self.MIDIVoiceList(self.iter(filter, voices))
+      ret = MIDIVoiceList(self.iter(filter, voices))
       if name is not None:
-        assert isinstance(ret, self.MIDIVoiceList)
+        assert isinstance(ret, MIDIVoiceList)
         self.voiceLists[name] = ret
     else:
       ret.setVoices(self.iter(filter, voices))
@@ -280,14 +286,23 @@ class SynthNav(QtCore.QObject):
     midiOutDevs = mididevice.getMIDIOutDevices()
     self.midiOutDevs = list((synthesizers.getMIDIOutDevice(dev[0], dev[1]) for dev in midiOutDevs))
     self.fullVoiceList = list(itertools.chain(*(x.getVoiceList() for x in self.midiOutDevs)))
+    
+  def saveUserData(self):
+    userdata = dict(self.userdata)
+    userdata['voiceLists'] = dict(self.userdata['voiceLists'])
+    del userdata['voiceLists']['all']
+    del userdata['voiceLists']['queued']
+    del userdata['voiceLists']['filtered']
+    self.userdataFile.setRoot(userdata)
+    self.userdataFile.save()
 
   ##
   #  Stores the given voice list to the given name.
   #  @param name Name to store the list under.
-  #  @param voices SynthNav.MIDIVoiceList object.
+  #  @param voices MIDIVoiceList object.
   #  @return "None".
   def saveVoiceList(self, name, voices):
-    assert isinstance(voices, self.MIDIVoiceList)
+    assert isinstance(voices, MIDIVoiceList)
     self.voiceLists[name] = voices
 
   ##
@@ -296,3 +311,8 @@ class SynthNav(QtCore.QObject):
   #  @return "None".
   def selectVoice(self, voice):
     voice.pc()
+  
+  def subscribeVoiceLists(self):
+    for name, voiceList in self.voiceLists.items():
+      if name not in ('all', 'queued', 'filtered'):
+        voiceList.listModified.connect(self.saveUserData)

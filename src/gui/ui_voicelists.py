@@ -30,7 +30,7 @@ import traceback
 #  Base class for voice list widgets.
 class VoiceListWidget(QtGui.QWidget):
 
-  ## Currently-assigned patchcorral.src.engine.mididevice.SynthNav.MIDIVoiceList object.
+  ## Currently-assigned patchcorral.src.engine.mididevice.MIDIVoiceList object.
   voiceList = None
 
   class TableWidget(QtGui.QTableWidget):
