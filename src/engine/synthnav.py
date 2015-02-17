@@ -253,9 +253,7 @@ class SynthNav(QtCore.QObject):
       for k, v in userdata['voiceLists'].items():
         self.userdata['voiceLists'][k] = MIDIVoiceList(v)
     if 'favorites' not in self.userdata['voiceLists']:
-      self.userdata['voiceLists'] = {
-        'favorites': MIDIVoiceList(),
-      }
+      self.userdata['voiceLists']['favorites'] = MIDIVoiceList()
     self.voiceLists = self.userdata['voiceLists']
 
   ##
