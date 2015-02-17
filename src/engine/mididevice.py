@@ -178,7 +178,6 @@ class MIDIDevice(QtCore.QObject):
   def __init__(self, port, name):
     super().__init__()
     # self.midi = None  #INITIALIZE THIS IN THE SUBCLASS!
-
     #Resolve missing details.
     if port is None:
       if name is None:
@@ -199,9 +198,11 @@ class MIDIDevice(QtCore.QObject):
       self.portName = self.midi.get_port_name(port)
     else:
       self.portName = name
-
     #Open the MIDI port!
     self.midi.open_port(self.portNum)
+    
+  def __del__(self):
+    self.midi.close_port()
 
   def get_port_name(self):
     return self.portName

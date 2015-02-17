@@ -33,6 +33,10 @@ SYNTHESIZERS = {
   'default': generalmidi,
 }
 
+OPENINDEVICES = {}
+
+OPENOUTDEVICES = {}
+
 ##
 #  Resolves the given information to a MIDI device.
 #  @param midiDevs List of 2-tuples "(port number, device name)".
@@ -80,7 +84,12 @@ def getMIDIInDevice(port=None, name=None, midiDevs=None):
   if midiDevs is None:
     midiDevs = mididevice.getMIDIInDevices()
   port, name, dev = _getMIDIDevice(midiDevs, port, name)
-  return dev.MIDIInDevice(port, name)
+  try:
+    return OPENINDEVICES[(port, name, dev)]
+  except KeyError:
+    ret = dev.MIDIInDevice(port, name)
+    OPENINDEVICES[(port, name, dev)] = ret
+    return ret
 
 ##
 #  Resolves a given port OR name to a MIDI Output device.
@@ -93,4 +102,9 @@ def getMIDIOutDevice(port=None, name=None, midiDevs=None):
   if midiDevs is None:
     midiDevs = mididevice.getMIDIOutDevices()
   port, name, dev = _getMIDIDevice(midiDevs, port, name)
-  return dev.MIDIOutDevice(port, name)
+  try:
+    return OPENOUTDEVICES[(port, name, dev)]
+  except KeyError:
+    ret = dev.MIDIOutDevice(port, name)
+    OPENOUTDEVICES[(port, name, dev)] = ret
+    return ret

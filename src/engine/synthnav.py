@@ -36,17 +36,17 @@ import itertools
 class MIDIVoiceList(QtCore.QObject):
 
   listModified = QtCore.Signal()
-  
+
   ##
   #  Class constructor.
   #  @param voices List of src.engine.mididevice.MIDIVoice objects.
   #  @return "None".
   def __init__(self, voices=None):
-    super().__init__()
+    super().__init__(None)
     if voices is None:
       voices = []
     self.voiceList = set(voices)
-    
+
   ##
   #  Add the given voice to the list.
   #  @param voice src.engine.mididevice.MIDIVoice object.
@@ -54,7 +54,7 @@ class MIDIVoiceList(QtCore.QObject):
   def add(self, voice):
     self.voiceList.add(voice)
     self.listModified.emit()
-    
+
   ##
   #  Add the given voices to the list.
   #  @param voices List of src.engine.mididevice.MIDIVoice objects.
@@ -62,38 +62,36 @@ class MIDIVoiceList(QtCore.QObject):
   def adds(self, voices):
     self.voiceList |= set(voices)
     self.listModified.emit()
-    
+
   ##
   #  Removes all voices from the list.
   #  @return "None".
   def clear(self):
     self.voiceList = set()
     self.listModified.emit()
-    
+
   ##
   #  Enables users to reference a particular voice in the list.
   #  @param key Integer index.
   def __getitem__(self, key):
-    print('getitem called with key {}'.format(key))
     return list(self.voiceList)[key]
-    
+
   def __getstate__(self):
     return self.voiceList
-    
+
   ##
   #  Returns a copy of the internal voice list.
   #  @return List of mididevice.MIDIVoice objects.
   def getVoices(self, voices=None):
     return list(self.voiceList)
-    
+
   ##
   #  Iterates over the voice list.  This is what gets called by
   #  "for ... in ...".
   #  @return Iterator object.
   def __iter__(self):
-    print('iter called')
     return iter(self.voiceList)
-    
+
   ##
   #  Returns an iterator that, as it is iterated, will apply the current voice
   #  by calling it's "pc" method.
@@ -102,12 +100,12 @@ class MIDIVoiceList(QtCore.QObject):
     for voice in self.voiceList:
       voice.pc()
       yield voice
-    
+
   ##
   #  Magic method for getting the length of the list.
   def __len__(self):
     return len(self.voiceList)
-    
+
   ##
   #  Removes the given voice from the list.
   #  @param voices Any number of src.engine.mididevice.MIDIVoice objects.
@@ -116,10 +114,10 @@ class MIDIVoiceList(QtCore.QObject):
     for voice in voices:
       self.voiceList.remove(voice)
     self.listModified.emit()
-    
+
   def __setstate__(self, state):
     self.voiceList = state
-    
+
   ##
   #  Sets the internal voice list to the given list.
   #  @param voices List of mididevice.MIDIVoice objects.
@@ -134,31 +132,26 @@ class MIDIVoiceList(QtCore.QObject):
 #  favorites list of voices.
 class SynthNav(QtCore.QObject):
 
+  ## Emits when the user has changed the voice filter.  Emits the new filter string.
   filterChanged = QtCore.Signal(str)
-  
-  ## Dictionary of voice lists with names as keys and .
+
+  ## Dictionary of voice lists with names as keys and MIDIVoiceList objects as values.
   voiceLists = None
 
   ##
   #  Class initializer.
   #  @return "None".
-  def __init__(self):
+  def __init__(self, userdataFileName):
     super().__init__()
-    self.userdataFile = yamlfile.File('userdata.yaml')
-    self.userdata = self.userdataFile.getRoot()  #Note that any modifications to this will modify
-                                                 #the internal structure of "userdataFile".
-    if self.userdata is None:
-      self.userdata = {}
     self.midiInDevs = None
     self.midiOutDevs = None
     self.currFilter = None
+    self.userdataFile = None
+    self.userdata = None
+    self.voiceLists = None
     #Call initialization functions.
     self.refreshMIDIDevices()
-    if 'voiceLists' not in self.userdata:
-      self.userdata['voiceLists'] = {
-        'favorites': MIDIVoiceList(),
-      }
-    self.voiceLists = self.userdata['voiceLists']
+    self.loadUserData(userdataFileName)
     self.newVoiceList(name='all')
     self.newVoiceList(name='filtered')
     self.newVoiceList('False', 'queued', [])
@@ -171,7 +164,7 @@ class SynthNav(QtCore.QObject):
   #  @return "None".
   def addFavoriteVoice(self, voice):
     self.voiceLists['favorites'].add(voice)
-    
+
   ##
   #  Manipulates the filter being used by the "filtered" voice list.
   #  @param filter String with a Python expression.  See "SynthNav.newVoiceList"
@@ -184,40 +177,40 @@ class SynthNav(QtCore.QObject):
     if filter is not None:
       self.newVoiceList(filter, 'filtered', voices)
     return self.currFilter
-    
+
   def getCurrCategories(self):
     return set(x.category for x in self.voiceLists['filtered'])
-    
+
   def getCurrChannels(self):
     return set(x.channel for x in self.voiceLists['filtered'])
-    
+
   def getCurrFilter(self):
     return self.currFilter
-    
+
   def getCurrLSBs(self):
     return set(x.lsb for x in self.voiceLists['filtered'])
-    
+
   def getCurrMidiOutDevPortNames(self):
     return set(x.device.portName for x in self.voiceLists['filtered'])
-    
+
   def getCurrMidiOutDevPortNums(self):
     return set(x.device.portNum for x in self.voiceLists['filtered'])
-    
+
   def getCurrMSBs(self):
     return set(x.msb for x in self.voiceLists['filtered'])
-    
+
   def getCurrPCs(self):
     return set(x._pc for x in self.voiceLists['filtered'])
-    
+
   def getCurrVoiceNums(self):
     return set(x.voiceNum for x in self.voiceLists['filtered'])
-  
+
   ##
   #  Returns the voices that are currently available from the filtered list.
   #  @return MIDIVoiceList object.
   def getFilteredVoiceList(self):
     return self.voiceLists['filtered']
-    
+
   ##
   #  Returns the currently-available MIDI output devices.
   #  @return A list of MIDIOutDevice objects.
@@ -250,6 +243,20 @@ class SynthNav(QtCore.QObject):
     for v in voiceList:
       if f(v):
         yield v
+        
+  def loadUserData(self, userdataFileName):
+    self.userdataFile = yamlfile.File(userdataFileName)
+    userdata = self.userdataFile.getRoot()  #Note that any modifications to this will modify
+                                            #the internal structure of "userdataFile".
+    self.userdata = {'voiceLists': {}}
+    if userdata is not None and 'voiceLists' in userdata:
+      for k, v in userdata['voiceLists'].items():
+        self.userdata['voiceLists'][k] = MIDIVoiceList(v)
+    if 'favorites' not in self.userdata['voiceLists']:
+      self.userdata['voiceLists'] = {
+        'favorites': MIDIVoiceList(),
+      }
+    self.voiceLists = self.userdata['voiceLists']
 
   ##
   #  Creates a new voice list using the given filter.
@@ -285,14 +292,13 @@ class SynthNav(QtCore.QObject):
     self.midiInDevs = mididevice.getMIDIInDevices()
     midiOutDevs = mididevice.getMIDIOutDevices()
     self.midiOutDevs = list((synthesizers.getMIDIOutDevice(dev[0], dev[1]) for dev in midiOutDevs))
-    self.fullVoiceList = list(itertools.chain(*(x.getVoiceList() for x in self.midiOutDevs)))
-    
+    self.fullVoiceList = list((itertools.chain(*(x.getVoiceList() for x in self.midiOutDevs))))
+
   def saveUserData(self):
-    userdata = dict(self.userdata)
-    userdata['voiceLists'] = dict(self.userdata['voiceLists'])
-    del userdata['voiceLists']['all']
-    del userdata['voiceLists']['queued']
-    del userdata['voiceLists']['filtered']
+    userdata = {'voiceLists': {}}
+    for k, v in self.userdata['voiceLists'].items():
+      if k not in ('all', 'queued', 'filtered'):
+        userdata['voiceLists'][k] = list(v)
     self.userdataFile.setRoot(userdata)
     self.userdataFile.save()
 
@@ -311,7 +317,7 @@ class SynthNav(QtCore.QObject):
   #  @return "None".
   def selectVoice(self, voice):
     voice.pc()
-  
+
   def subscribeVoiceLists(self):
     for name, voiceList in self.voiceLists.items():
       if name not in ('all', 'queued', 'filtered'):
