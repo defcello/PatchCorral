@@ -1,6 +1,8 @@
 # PatchCorral
 This is a program I've written to bring my Roland Fantom-XR into a more manageable environment (and other synthesizers, in time).  It uses an interface similar to what you would find in a media player program to allow users to easily work down the patches to find that perfect sound from their library.  It also enables the user to do WireShark-style filters on the patch list for more advanced queries.
 
+While I would love to convert this to a VST, at the moment this is a utility program.  Since the Roland Fantom-XR has two MIDI inputs, I usually route this to the USB (detectable) and route my DAW activity through the standard MIDI port using a separate MIDI output device.  This works well enough so I don't have a huge urge to get into VST-land, especially since VST2 libraries are no longer available and Reaper doesn't yet support VST3 (grrrr......).
+
 ![PatchCorral Screenshot](./screenshot.png "Screenshot")
 
 Right now, the filtering and queueing of patches is all working.  The next features to implement include:
@@ -19,7 +21,6 @@ This project requires:
  - PyYAML (http://pyyaml.org/wiki/PyYAML)
 
 ## Usage
-While I would love to convert this to a VST, at the moment this is a utility program.  Since the Roland Fantom-XR has two MIDI inputs, I usually route this to the USB (detectable) and route my DAW activity through the standard MIDI port using a separate MIDI output device.  This works well enough so I don't have a huge urge to get into VST-land, especially since VST2 libraries are no longer available and Reaper doesn't yet support VST3 (grrrr......).
 
 ### To run:
 1. Execute "bin/synthnav.py".
