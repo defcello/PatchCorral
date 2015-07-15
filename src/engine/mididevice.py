@@ -19,11 +19,8 @@
 
 ## @file
 #  Defines a base class for MIDI devices.
-#  @date 03/08/2013 Created file.  -jc
-#  @author John Crawford
 
-
-# from patchcorral.src.data import synthesizers  #imported below to dodge circular import errors
+# from patchcorral.src.data import synthesizers  #Imported below to dodge circular import errors.  Yes, I know this usually means I could have designed something better.
 from PySide import QtCore
 import re  #For user-defined iteration filters.
 import rtmidi
@@ -33,19 +30,24 @@ import yaml
 
 
 
+
 ##
 #  Returns a list of the available MIDI Input Devices.
 #  @return List of tuples "(portNum, portName)".
 def getMIDIInDevices():
-    midi = rtmidi.MidiIn()
-    return list((port, midi.get_port_name(port)) for port in range(midi.get_port_count()))
+  return ()
+  ## Disabled so it doesn't tie up resources intended to be used by the DAW.  Eventually I'd like to
+  ## have the MIDI Input combo box selector dictate which input is open, including a "None" option
+  ## that closes all MIDI Inputs being used by PatchCorral.
+  # midi = rtmidi.MidiIn()
+  # return list((port, midi.get_port_name(port)) for port in range(midi.get_port_count()))
 
 ##
 #  Returns a list of the available MIDI Output Devices.
 #  @return List of tuples "(portNum, portName)".
 def getMIDIOutDevices():
-    midi = rtmidi.MidiOut()
-    return list((port, midi.get_port_name(port)) for port in range(midi.get_port_count()))
+  midi = rtmidi.MidiOut()
+  return list((port, midi.get_port_name(port)) for port in range(midi.get_port_count()) if 'FANTOM-X' in midi.get_port_name(port))
 
 ##
 #  Class representing a specific MIDI voice.

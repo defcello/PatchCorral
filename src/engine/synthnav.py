@@ -21,12 +21,12 @@
 #  Engine for the Synthesizer Navigator (SynthNav).
 
 from . import addressabletree
-from . import yamlfile
 from . import mididevice
-from patchcorral.src.data import synthesizers
+from . import yamlfile
 from PySide import QtCore
-import re
+from patchcorral.src.data import synthesizers
 import itertools
+import re
 
 
 
