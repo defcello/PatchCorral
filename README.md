@@ -37,19 +37,21 @@ To add new voice lists:
 1. Launch and then close PatchCorral so "bin/userdata.yml" is created.
 2. Open "bin/userdata.yml" in your favorite text editor.
 3. Populate "voicelists" with any new names you'd like.  For example:
-    ```yaml
-    voiceLists:
-      favorites:
-      - !!python/object:patchcorral.src.engine.mididevice.MIDIVoice {category: SYNTH BASS,
-        channel: 1, deviceName: FANTOM-X, lsb: 4, msb: 93, name: Flat SawBass, pc: 48,
-        voiceNum: XP-D 049}
-      - !!python/object:patchcorral.src.engine.mididevice.MIDIVoice {category: SYNTH BASS,
-        channel: 1, deviceName: FANTOM-X, lsb: 4, msb: 93, name: 808 Bass, pc: 33, voiceNum: XP-D
-          034}
-      mysong1: []
-      mysong2: []
-    ```
-    ...adds 2 new voice lists "mysong1" and "mysong2" alongside your "favorites" list.
+
+```
+voiceLists:
+  favorites:
+  - !!python/object:patchcorral.src.engine.mididevice.MIDIVoice {category: SYNTH BASS,
+    channel: 1, deviceName: FANTOM-X, lsb: 4, msb: 93, name: Flat SawBass, pc: 48,
+    voiceNum: XP-D 049}
+  - !!python/object:patchcorral.src.engine.mididevice.MIDIVoice {category: SYNTH BASS,
+    channel: 1, deviceName: FANTOM-X, lsb: 4, msb: 93, name: 808 Bass, pc: 33, voiceNum: XP-D
+      034}
+  mysong1: []
+  mysong2: []
+```
+
+   ...adds 2 new voice lists "mysong1" and "mysong2" alongside your "favorites" list.
 
 To delete voice lists:
 1. Close PatchCorral if it's running.
